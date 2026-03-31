@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wallet, BarChart3, List, FileText } from 'lucide-react';
-import { Transaction, Filters as FiltersType, AppData } from './types';
+import { Transaction, Filters as FiltersType, AppData, InvoiceData } from './types';
 import { loadAppData, saveTransactionForEntity, addEntity, createEntity } from './utils/storage';
 import { exportToExcel } from './utils/exportExcel';
 import { TransactionForm } from './components/TransactionForm';
@@ -10,9 +10,11 @@ import { PLSummary } from './components/PLSummary';
 import { EntityManager } from './components/EntityManager';
 import { CategoryManager } from './components/CategoryManager';
 import { BankStatementImport } from './components/BankStatementImport';
+import { InvoiceParser } from './components/InvoiceParser';
 import { formatCurrencySymbol } from './utils/format';
+import { mapInvoiceToTransaction } from './utils/invoiceParser';
 
-type View = 'transactions' | 'summary';
+type View = 'transactions' | 'summary' | 'invoice-parser';
 
 function App() {
   const [appData, setAppData] = useState<AppData>({
@@ -62,6 +64,17 @@ function App() {
   const deleteTransaction = (id: string) => {
     const updated = transactions.filter((t) => t.id !== id);
     saveTransactions(updated);
+  };
+
+  const addInvoiceToCashbook = (invoiceData: InvoiceData) => {
+    const invoiceTransaction = mapInvoiceToTransaction(invoiceData, appData.categories.expense);
+
+    if (!invoiceTransaction) {
+      return;
+    }
+
+    addTransaction(invoiceTransaction);
+    setView('transactions');
   };
 
   const filteredTransactions = transactions.filter((transaction) => {
@@ -147,13 +160,26 @@ function App() {
               P&L Summary
             </button>
             <button
-              onClick={() => exportToExcel({ transactions: filteredTransactions })}
-              disabled={filteredTransactions.length === 0}
-              className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              onClick={() => setView('invoice-parser')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                view === 'invoice-parser'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
             >
               <FileText size={20} />
-              Export to Excel
+              Invoice Parser
             </button>
+            {view !== 'invoice-parser' && (
+              <button
+                onClick={() => exportToExcel({ transactions: filteredTransactions })}
+                disabled={filteredTransactions.length === 0}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <FileText size={20} />
+                Export to Excel
+              </button>
+            )}
           </div>
         </div>
 
@@ -175,6 +201,8 @@ function App() {
               />
             </div>
           </div>
+        ) : view === 'invoice-parser' ? (
+          <InvoiceParser appData={appData} onAddToCashbook={addInvoiceToCashbook} />
         ) : (
           <PLSummary transactions={filteredTransactions} entity={currentEntity} />
         )}

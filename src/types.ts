@@ -36,3 +36,22 @@ export interface AppData {
     expense: string[];
   };
 }
+
+export interface InvoiceLineItem {
+  description: string | null;
+  quantity: number | null;
+  unit_price: number | null;
+  amount: number | null;
+}
+
+export interface InvoiceData {
+  vendor_name: string | null;
+  invoice_number: string | null;
+  invoice_date: string | null;
+  due_date: string | null;
+  line_items: InvoiceLineItem[];
+  subtotal: number | null;
+  gst_amount: number | null;
+  total_amount: number | null;
+  payment_status: string | null;
+}
