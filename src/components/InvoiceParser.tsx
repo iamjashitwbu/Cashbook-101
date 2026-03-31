@@ -3,7 +3,8 @@ import { AlertCircle, FileText, Loader2, Plus, Upload } from 'lucide-react';
 import { AppData, InvoiceData } from '../types';
 import { exportToExcel } from '../utils/exportExcel';
 import { formatCurrencySymbol } from '../utils/format';
-import { mapInvoiceToTransaction, parseInvoicePdf } from '../utils/invoiceParser';
+import { mapInvoiceToTransaction } from '../utils/invoiceData';
+import { parseInvoicePdf } from '../utils/invoiceParser';
 
 interface InvoiceParserProps {
   appData: AppData;

@@ -12,7 +12,7 @@ import { CategoryManager } from './components/CategoryManager';
 import { BankStatementImport } from './components/BankStatementImport';
 import { InvoiceParser } from './components/InvoiceParser';
 import { formatCurrencySymbol } from './utils/format';
-import { mapInvoiceToTransaction } from './utils/invoiceParser';
+import { mapInvoiceToTransaction } from './utils/invoiceData';
 
 type View = 'transactions' | 'summary' | 'invoice-parser';
 
