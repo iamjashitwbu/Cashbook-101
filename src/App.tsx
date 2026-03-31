@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Wallet, Download, BarChart3, List, FileText } from 'lucide-react';
+import { Wallet, BarChart3, List, FileText } from 'lucide-react';
 import { Transaction, Filters as FiltersType, AppData } from './types';
-import { loadAppData, saveAppData, saveTransactionForEntity, addEntity, createEntity } from './utils/storage';
+import { loadAppData, saveTransactionForEntity, addEntity, createEntity } from './utils/storage';
 import { exportToExcel } from './utils/exportExcel';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionList } from './components/TransactionList';
@@ -9,6 +9,7 @@ import { Filters } from './components/Filters';
 import { PLSummary } from './components/PLSummary';
 import { EntityManager } from './components/EntityManager';
 import { CategoryManager } from './components/CategoryManager';
+import { BankStatementImport } from './components/BankStatementImport';
 import { formatCurrencySymbol } from './utils/format';
 
 type View = 'transactions' | 'summary';
@@ -40,20 +41,27 @@ function App() {
   const currentEntity = appData.entities.find((e) => e.id === appData.currentEntityId);
   const transactions = appData.transactions[appData.currentEntityId] || [];
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction: Transaction = {
+  const saveTransactions = (nextTransactions: Transaction[]) => {
+    const newAppData = saveTransactionForEntity(appData, appData.currentEntityId, nextTransactions);
+    setAppData(newAppData);
+  };
+
+  const addTransactions = (newTransactions: Omit<Transaction, 'id'>[]) => {
+    const importedTransactions: Transaction[] = newTransactions.map((transaction) => ({
       ...transaction,
       id: crypto.randomUUID()
-    };
-    const updated = [...transactions, newTransaction];
-    const newAppData = saveTransactionForEntity(appData, appData.currentEntityId, updated);
-    setAppData(newAppData);
+    }));
+
+    saveTransactions([...transactions, ...importedTransactions]);
+  };
+
+  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
+    addTransactions([transaction]);
   };
 
   const deleteTransaction = (id: string) => {
     const updated = transactions.filter((t) => t.id !== id);
-    const newAppData = saveTransactionForEntity(appData, appData.currentEntityId, updated);
-    setAppData(newAppData);
+    saveTransactions(updated);
   };
 
   const filteredTransactions = transactions.filter((transaction) => {
@@ -111,6 +119,11 @@ function App() {
           <CategoryManager appData={appData} onAppDataChange={setAppData} />
 
           <div className="ml-auto flex flex-wrap gap-3">
+            <BankStatementImport
+              appData={appData}
+              onImport={addTransactions}
+              disabled={!appData.currentEntityId}
+            />
             <button
               onClick={() => setView('transactions')}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -134,12 +147,12 @@ function App() {
               P&L Summary
             </button>
             <button
-              onClick={() => exportToExcel({ entityName: currentEntity?.name || 'Export', transactions: filteredTransactions })}
+              onClick={() => exportToExcel({ transactions: filteredTransactions })}
               disabled={filteredTransactions.length === 0}
               className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <FileText size={20} />
-              Export Excel
+              Export to Excel
             </button>
           </div>
         </div>
