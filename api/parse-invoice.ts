@@ -1,5 +1,3 @@
-import { normalizeInvoiceData, parseJsonObject } from '../src/utils/invoiceData';
-
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_API_VERSION = '2023-06-01';
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
@@ -7,6 +5,25 @@ const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 type ParseInvoiceRequestBody = {
   pdfBase64?: string;
   prompt?: string;
+};
+
+type InvoiceLineItem = {
+  description: string | null;
+  quantity: number | null;
+  unit_price: number | null;
+  amount: number | null;
+};
+
+type InvoiceData = {
+  vendor_name: string | null;
+  invoice_number: string | null;
+  invoice_date: string | null;
+  due_date: string | null;
+  line_items: InvoiceLineItem[];
+  subtotal: number | null;
+  gst_amount: number | null;
+  total_amount: number | null;
+  payment_status: string | null;
 };
 
 export async function POST(request: Request) {
@@ -138,3 +155,134 @@ export async function POST(request: Request) {
     );
   }
 }
+
+const parseJsonObject = (value: string) => {
+  const cleanedValue = value.replace(/```json|```/gi, '').trim();
+
+  try {
+    return JSON.parse(cleanedValue);
+  } catch {
+    const jsonStart = cleanedValue.indexOf('{');
+    const jsonEnd = cleanedValue.lastIndexOf('}');
+
+    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+      throw new Error('Claude returned an unexpected response format.');
+    }
+
+    return JSON.parse(cleanedValue.slice(jsonStart, jsonEnd + 1));
+  }
+};
+
+const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
+  if (!rawValue || typeof rawValue !== 'object') {
+    throw new Error('Claude returned invalid invoice data.');
+  }
+
+  const rawInvoice = rawValue as Record<string, unknown>;
+
+  return {
+    vendor_name: normalizeNullableString(rawInvoice.vendor_name),
+    invoice_number: normalizeNullableString(rawInvoice.invoice_number),
+    invoice_date: normalizeNullableDate(rawInvoice.invoice_date),
+    due_date: normalizeNullableDate(rawInvoice.due_date),
+    line_items: normalizeLineItems(rawInvoice.line_items),
+    subtotal: normalizeNullableNumber(rawInvoice.subtotal),
+    gst_amount: normalizeNullableNumber(rawInvoice.gst_amount),
+    total_amount: normalizeNullableNumber(rawInvoice.total_amount),
+    payment_status: normalizeNullableString(rawInvoice.payment_status)
+  };
+};
+
+const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((item) => {
+    const rawItem = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+
+    return {
+      description: normalizeNullableString(rawItem.description),
+      quantity: normalizeNullableNumber(rawItem.quantity),
+      unit_price: normalizeNullableNumber(rawItem.unit_price),
+      amount: normalizeNullableNumber(rawItem.amount)
+    };
+  });
+};
+
+const normalizeNullableString = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const normalizedValue = trimmedValue.toLowerCase();
+  if (normalizedValue === 'null' || normalizedValue === 'n/a' || normalizedValue === 'na') {
+    return null;
+  }
+
+  return trimmedValue;
+};
+
+const normalizeNullableNumber = (value: unknown): number | null => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const numericValue = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
+
+  if (!numericValue) {
+    return null;
+  }
+
+  const parsedNumber = Number.parseFloat(numericValue);
+  return Number.isNaN(parsedNumber) ? null : parsedNumber;
+};
+
+const normalizeNullableDate = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const datePart = trimmedValue.split(' ')[0];
+
+  if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(datePart)) {
+    const [year, month, day] = datePart.split(/[-/]/);
+    return `${year}-${month}-${day}`;
+  }
+
+  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(datePart)) {
+    const [day, month, year] = datePart.split(/[-/]/);
+    return `${year}-${month}-${day}`;
+  }
+
+  if (/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(datePart)) {
+    const parsedDate = new Date(datePart);
+    return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
+  }
+
+  const parsedDate = new Date(trimmedValue);
+  return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
+};
+
+const formatDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
