@@ -1,6 +1,5 @@
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const ANTHROPIC_API_VERSION = '2023-06-01';
-const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+const GEMINI_API_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 type ParseInvoiceRequestBody = {
   pdfBase64?: string;
@@ -27,12 +26,12 @@ type InvoiceData = {
 };
 
 export async function POST(request: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     return Response.json(
       {
-        error: 'Invoice parsing is not configured on the server. Add ANTHROPIC_API_KEY and redeploy.'
+        error: 'Invoice parsing is not configured on the server. Add GEMINI_API_KEY and redeploy.'
       },
       { status: 500 }
     );
@@ -54,35 +53,26 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing invoice extraction prompt.' }, { status: 400 });
   }
 
-  let anthropicResponse: Response;
+  let geminiResponse: Response;
 
   try {
-    anthropicResponse = await fetch(ANTHROPIC_API_URL, {
+    geminiResponse = await fetch(`${GEMINI_API_URL}?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: {
-        'content-type': 'application/json',
-        'anthropic-version': ANTHROPIC_API_VERSION,
-        'x-api-key': apiKey
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: ANTHROPIC_MODEL,
-        max_tokens: 2048,
-        system: body.prompt,
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: [
+            parts: [
               {
-                type: 'document',
-                source: {
-                  type: 'base64',
-                  media_type: 'application/pdf',
+                inline_data: {
+                  mime_type: 'application/pdf',
                   data: body.pdfBase64
                 }
               },
               {
-                type: 'text',
-                text: 'Extract the invoice fields from this PDF and return only the JSON object.'
+                text: body.prompt
               }
             ]
           }
@@ -99,7 +89,7 @@ export async function POST(request: Request) {
   let responseData: unknown;
 
   try {
-    responseData = await anthropicResponse.json();
+    responseData = await geminiResponse.json();
   } catch {
     return Response.json(
       { error: 'The invoice parsing service returned an unreadable response.' },
@@ -107,25 +97,29 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!anthropicResponse.ok) {
+  if (!geminiResponse.ok) {
     const apiMessage =
       typeof (responseData as { error?: { message?: unknown } })?.error?.message === 'string'
         ? (responseData as { error: { message: string } }).error.message
         : 'The invoice parsing request failed.';
 
-    return Response.json({ error: apiMessage }, { status: anthropicResponse.status });
+    return Response.json({ error: apiMessage }, { status: geminiResponse.status });
   }
 
-  const responseText = Array.isArray((responseData as { content?: unknown[] })?.content)
-    ? ((responseData as { content: Array<{ type?: string; text?: string }> }).content)
-        .filter((block) => block.type === 'text')
-        .map((block) => block.text ?? '')
+  const responseText = Array.isArray((responseData as { candidates?: unknown[] })?.candidates)
+    ? ((responseData as {
+        candidates: Array<{
+          content?: { parts?: Array<{ text?: string }> };
+        }>;
+      }).candidates)
+        .flatMap((candidate) => candidate.content?.parts ?? [])
+        .map((part) => part.text ?? '')
         .join('\n')
         .trim()
     : '';
 
   if (!responseText) {
-    return Response.json({ error: 'Claude did not return any invoice data.' }, { status: 502 });
+    return Response.json({ error: 'Gemini did not return any invoice data.' }, { status: 502 });
   }
 
   try {
@@ -137,7 +131,7 @@ export async function POST(request: Request) {
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      console.error('Claude raw invoice response:', rawText);
+      console.error('Gemini raw invoice response:', rawText);
       parsed = parseJsonObject(rawText);
     }
 
@@ -149,7 +143,7 @@ export async function POST(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : 'Claude returned an unexpected invoice format.'
+            : 'Gemini returned an unexpected invoice format.'
       },
       { status: 502 }
     );
@@ -166,7 +160,7 @@ const parseJsonObject = (value: string) => {
     const jsonEnd = cleanedValue.lastIndexOf('}');
 
     if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-      throw new Error('Claude returned an unexpected response format.');
+      throw new Error('Gemini returned an unexpected response format.');
     }
 
     return JSON.parse(cleanedValue.slice(jsonStart, jsonEnd + 1));
@@ -175,7 +169,7 @@ const parseJsonObject = (value: string) => {
 
 const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
   if (!rawValue || typeof rawValue !== 'object') {
-    throw new Error('Claude returned invalid invoice data.');
+    throw new Error('Gemini returned invalid invoice data.');
   }
 
   const rawInvoice = rawValue as Record<string, unknown>;

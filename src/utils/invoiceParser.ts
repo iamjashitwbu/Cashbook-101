@@ -36,7 +36,7 @@ export const parseInvoicePdf = async (file: File): Promise<InvoiceData> => {
   }
 
   if (!responseData.invoiceData) {
-    throw new Error('Claude did not return any invoice data.');
+    throw new Error('The invoice parser did not return any invoice data.');
   }
 
   return responseData.invoiceData;

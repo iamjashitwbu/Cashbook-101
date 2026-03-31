@@ -13,7 +13,7 @@ export const parseJsonObject = (value: string) => {
     const jsonEnd = cleanedValue.lastIndexOf('}');
 
     if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-      throw new Error('Claude returned an unexpected response format.');
+      throw new Error('The model returned an unexpected response format.');
     }
 
     return JSON.parse(cleanedValue.slice(jsonStart, jsonEnd + 1));
@@ -22,7 +22,7 @@ export const parseJsonObject = (value: string) => {
 
 export const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
   if (!rawValue || typeof rawValue !== 'object') {
-    throw new Error('Claude returned invalid invoice data.');
+    throw new Error('The model returned invalid invoice data.');
   }
 
   const rawInvoice = rawValue as Record<string, unknown>;
