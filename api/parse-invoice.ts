@@ -112,7 +112,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const invoiceData = normalizeInvoiceData(parseJsonObject(responseText));
+    const rawText = responseText;
+    const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    let parsed: unknown;
+
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      console.error('Claude raw invoice response:', rawText);
+      parsed = parseJsonObject(rawText);
+    }
+
+    const invoiceData = normalizeInvoiceData(parsed);
     return Response.json({ invoiceData });
   } catch (error) {
     return Response.json(
