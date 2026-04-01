@@ -36,7 +36,8 @@ export const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
     subtotal: normalizeNullableNumber(rawInvoice.subtotal),
     gst_amount: normalizeNullableNumber(rawInvoice.gst_amount),
     total_amount: normalizeNullableNumber(rawInvoice.total_amount),
-    payment_status: normalizeNullableString(rawInvoice.payment_status)
+  payment_status: normalizeNullableString(rawInvoice.payment_status),
+    transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
   };
 };
 
@@ -61,9 +62,7 @@ const isSale = invoiceData.transaction_type === 'sale';
     category: isSale ? 'Sales Revenue' : defaultExpenseCategory,
     expenseCategory: isSale ? undefined : 'cogs'
   };
- payment_status: normalizeNullableString(rawInvoice.payment_status),
-    transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
-};
+
 
 const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
   if (!Array.isArray(value)) {
