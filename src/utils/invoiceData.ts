@@ -61,11 +61,8 @@ const isSale = invoiceData.transaction_type === 'sale';
     category: isSale ? 'Sales Revenue' : defaultExpenseCategory,
     expenseCategory: isSale ? undefined : 'cogs'
   };
-```
-
-Also add `transaction_type: null` to the `normalizeInvoiceData` return object — find:
-```
-    payment_status: normalizeNullableString(rawInvoice.payment_status)
+ payment_status: normalizeNullableString(rawInvoice.payment_status),
+    transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
 };
 
 const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
@@ -172,4 +169,10 @@ const selectDefaultExpenseCategory = (expenseCategories: string[]) => {
   }
 
   return 'Other';
+};
+const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
+  if (typeof value !== 'string') return null;
+  const v = value.trim().toLowerCase();
+  if (v === 'sale' || v === 'purchase') return v;
+  return null;
 };
