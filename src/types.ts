@@ -54,4 +54,5 @@ export interface InvoiceData {
   gst_amount: number | null;
   total_amount: number | null;
   payment_status: string | null;
+  transaction_type: 'sale' | 'purchase' | null;
 }
