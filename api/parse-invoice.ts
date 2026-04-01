@@ -53,20 +53,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing invoice extraction prompt.' }, { status: 400 });
   }
 
-  let firstPageImageBase64: string;
+  const firstPageImageBase64 = body.pdfBase64.trim();
 
-  try {
-    firstPageImageBase64 = await ensureInvoiceImageBase64(body.pdfBase64);
-  } catch (error) {
-    return Response.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Failed to prepare the invoice image for parsing.'
-      },
-      { status: 500 }
-    );
+  if (!firstPageImageBase64) {
+    return Response.json({ error: 'Missing invoice image data.' }, { status: 400 });
   }
 
   let groqResponse: Response;
@@ -299,44 +289,4 @@ const formatDate = (date: Date) => {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${year}-${month}-${day}`;
-};
-
-const ensureInvoiceImageBase64 = async (fileBase64: string) => {
-  if (isJpegBase64(fileBase64)) {
-    return fileBase64;
-  }
-
-  return convertPdfFirstPageToJpegBase64(fileBase64);
-};
-
-const isJpegBase64 = (value: string) => value.trim().startsWith('/9j/');
-
-const convertPdfFirstPageToJpegBase64 = async (pdfBase64: string) => {
-  const [{ createCanvas }, pdfjsLib] = await Promise.all([
-    import('@napi-rs/canvas'),
-    import('pdfjs-dist/legacy/build/pdf.mjs')
-  ]);
-
-  const pdfBytes = Uint8Array.from(Buffer.from(pdfBase64, 'base64'));
-  const loadingTask = pdfjsLib.getDocument({
-    data: pdfBytes,
-    disableWorker: true
-  });
-  const pdfDocument = await loadingTask.promise;
-  const firstPage = await pdfDocument.getPage(1);
-  const viewport = firstPage.getViewport({ scale: 2 });
-  const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
-  const context = canvas.getContext('2d');
-
-  if (!context) {
-    throw new Error('Failed to create a rendering context for the invoice PDF.');
-  }
-
-  await firstPage.render({
-    canvasContext: context as any,
-    viewport
-  }).promise;
-
-  const jpegBuffer = canvas.toBuffer('image/jpeg');
-  return Buffer.from(jpegBuffer).toString('base64');
 };
