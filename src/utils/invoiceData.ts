@@ -175,3 +175,5 @@ const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null =>
   if (v === 'sale' || v === 'purchase') return v;
   return null;
 };
+
+  
