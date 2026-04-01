@@ -1,74 +1,33 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
-type ParseInvoiceRequestBody = {
-  pdfBase64?: string;
-  prompt?: string;
-};
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-type InvoiceLineItem = {
-  description: string | null;
-  quantity: number | null;
-  unit_price: number | null;
-  amount: number | null;
-};
-
-type InvoiceData = {
-  vendor_name: string | null;
-  invoice_number: string | null;
-  invoice_date: string | null;
-  due_date: string | null;
-  line_items: InvoiceLineItem[];
-  subtotal: number | null;
-  gst_amount: number | null;
-  total_amount: number | null;
-  payment_status: string | null;
-  transaction_type: 'sale' | 'purchase' | null;
-};
-
-export async function POST(request: Request) {
   const apiKey = process.env.GROQ_API_KEY;
 
   if (!apiKey) {
-    return Response.json(
-      {
-        error: 'Invoice parsing is not configured on the server. Add GROQ_API_KEY and redeploy.'
-      },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      error: 'Invoice parsing is not configured on the server. Add GROQ_API_KEY and redeploy.'
+    });
   }
-
-  let body: ParseInvoiceRequestBody;
 
   try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: 'Invalid request body.' }, { status: 400 });
-  }
+    const { pdfBase64 } = req.body;
 
-  if (!body.pdfBase64) {
-    return Response.json({ error: 'Missing invoice file data.' }, { status: 400 });
-  }
+    if (!pdfBase64) {
+      return res.status(400).json({ error: 'No PDF data provided' });
+    }
 
-  if (!body.prompt) {
-    return Response.json({ error: 'Missing invoice extraction prompt.' }, { status: 400 });
-  }
-
-  const firstPageImageBase64 = body.pdfBase64.trim();
-  const invoicePrompt = `${body.prompt} Also determine transaction_type: return 'sale' if this is an invoice issued by us (we are the seller), return 'purchase' if this is an invoice we received (we are the buyer). Add this as transaction_type field in the JSON.`;
-
-  if (!firstPageImageBase64) {
-    return Response.json({ error: 'Missing invoice image data.' }, { status: 400 });
-  }
-
-  let groqResponse: Response;
-
-  try {
-    groqResponse = await fetch(GROQ_API_URL, {
+    const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
-        'content-type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: GROQ_MODEL,
@@ -79,12 +38,12 @@ export async function POST(request: Request) {
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:image/jpeg;base64,${firstPageImageBase64}`
+                  url: `data:image/jpeg;base64,${pdfBase64}`
                 }
               },
               {
                 type: 'text',
-                text: invoicePrompt
+                text: 'Extract all invoice data from this image and return ONLY a JSON object with no extra text, no markdown, no backticks. Fields: vendor_name, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, payment_status, transaction_type (return "sale" if we are the seller, "purchase" if we are the buyer). Set any missing field to null.'
               }
             ]
           }
@@ -92,218 +51,29 @@ export async function POST(request: Request) {
         max_tokens: 1000
       })
     });
-  } catch {
-    return Response.json(
-      { error: 'Unable to reach the invoice parsing service right now.' },
-      { status: 502 }
-    );
-  }
 
-  let responseData: unknown;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Groq API error:', errorText);
+      return res.status(500).json({ error: errorText });
+    }
 
-  try {
-    responseData = await groqResponse.json();
-  } catch {
-    return Response.json(
-      { error: 'The invoice parsing service returned an unreadable response.' },
-      { status: 502 }
-    );
-  }
+    const data = await response.json();
+    const rawText = data.choices?.[0]?.message?.content || '';
+    console.log('Groq raw response:', rawText);
 
-  if (!groqResponse.ok) {
-    const apiMessage =
-      typeof (responseData as { error?: { message?: unknown } })?.error?.message === 'string'
-        ? (responseData as { error: { message: string } }).error.message
-        : 'The invoice parsing request failed.';
-
-    return Response.json({ error: apiMessage }, { status: groqResponse.status });
-  }
-
-  const responseText = Array.isArray((responseData as { choices?: unknown[] })?.choices)
-    ? ((responseData as {
-        choices: Array<{
-          message?: { content?: string };
-        }>;
-      }).choices)
-        .map((choice) => choice.message?.content ?? '')
-        .join('\n')
-        .trim()
-    : '';
-
-  if (!responseText) {
-    return Response.json({ error: 'Groq did not return any invoice data.' }, { status: 502 });
-  }
-
-  try {
-    const rawText = responseText;
     const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-    let parsed: unknown;
-
     try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error('Groq raw invoice response:', rawText);
-      parsed = parseJsonObject(rawText);
+      const parsed = JSON.parse(cleaned);
+      return res.status(200).json(parsed);
+    } catch (parseError) {
+      console.error('JSON parse error. Raw response:', rawText);
+      return res.status(500).json({ error: 'The invoice parser returned an unreadable response.' });
     }
 
-    const invoiceData = normalizeInvoiceData(parsed);
-    return Response.json({ invoiceData });
   } catch (error) {
-    return Response.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Groq returned an unexpected invoice format.'
-      },
-      { status: 500 }
-    );
+    console.error('Handler error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
-
-const parseJsonObject = (value: string) => {
-  const cleanedValue = value.replace(/```json|```/gi, '').trim();
-
-  try {
-    return JSON.parse(cleanedValue);
-  } catch {
-    const jsonStart = cleanedValue.indexOf('{');
-    const jsonEnd = cleanedValue.lastIndexOf('}');
-
-    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-      throw new Error('Groq returned an unexpected response format.');
-    }
-
-    return JSON.parse(cleanedValue.slice(jsonStart, jsonEnd + 1));
-  }
-};
-
-const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
-  if (!rawValue || typeof rawValue !== 'object') {
-    throw new Error('Groq returned invalid invoice data.');
-  }
-
-  const rawInvoice = rawValue as Record<string, unknown>;
-
-  return {
-    vendor_name: normalizeNullableString(rawInvoice.vendor_name),
-    invoice_number: normalizeNullableString(rawInvoice.invoice_number),
-    invoice_date: normalizeNullableDate(rawInvoice.invoice_date),
-    due_date: normalizeNullableDate(rawInvoice.due_date),
-    line_items: normalizeLineItems(rawInvoice.line_items),
-    subtotal: normalizeNullableNumber(rawInvoice.subtotal),
-    gst_amount: normalizeNullableNumber(rawInvoice.gst_amount),
-    total_amount: normalizeNullableNumber(rawInvoice.total_amount),
-    payment_status: normalizeNullableString(rawInvoice.payment_status),
-    transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
-  };
-};
-
-const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.map((item) => {
-    const rawItem = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
-
-    return {
-      description: normalizeNullableString(rawItem.description),
-      quantity: normalizeNullableNumber(rawItem.quantity),
-      unit_price: normalizeNullableNumber(rawItem.unit_price),
-      amount: normalizeNullableNumber(rawItem.amount)
-    };
-  });
-};
-
-const normalizeNullableString = (value: unknown): string | null => {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const normalizedValue = trimmedValue.toLowerCase();
-  if (normalizedValue === 'null' || normalizedValue === 'n/a' || normalizedValue === 'na') {
-    return null;
-  }
-
-  return trimmedValue;
-};
-
-const normalizeNullableNumber = (value: unknown): number | null => {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const numericValue = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
-
-  if (!numericValue) {
-    return null;
-  }
-
-  const parsedNumber = Number.parseFloat(numericValue);
-  return Number.isNaN(parsedNumber) ? null : parsedNumber;
-};
-
-const normalizeNullableDate = (value: unknown): string | null => {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const datePart = trimmedValue.split(' ')[0];
-
-  if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(datePart)) {
-    const [year, month, day] = datePart.split(/[-/]/);
-    return `${year}-${month}-${day}`;
-  }
-
-  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(datePart)) {
-    const [day, month, year] = datePart.split(/[-/]/);
-    return `${year}-${month}-${day}`;
-  }
-
-  if (/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(datePart)) {
-    const parsedDate = new Date(datePart);
-    return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
-  }
-
-  const parsedDate = new Date(trimmedValue);
-  return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
-};
-
-const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const normalizedValue = value.trim().toLowerCase();
-
-  if (normalizedValue === 'sale' || normalizedValue === 'purchase') {
-    return normalizedValue;
-  }
-
-  return null;
-};
-
-const formatDate = (date: Date) => {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
