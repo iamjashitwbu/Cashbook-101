@@ -1,7 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { InvoiceData } from '../types';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 async function convertPdfToJpegBase64(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
