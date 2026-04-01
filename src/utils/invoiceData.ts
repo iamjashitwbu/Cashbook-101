@@ -51,14 +51,21 @@ export const mapInvoiceToTransaction = (
   const defaultExpenseCategory = selectDefaultExpenseCategory(expenseCategories);
   const descriptionParts = [invoiceData.vendor_name, invoiceData.invoice_number].filter(Boolean);
 
+const isSale = invoiceData.transaction_type === 'sale';
+
   return {
     date: invoiceData.invoice_date,
-    description: descriptionParts.join(' - ') || 'Invoice purchase',
+    description: descriptionParts.join(' - ') || (isSale ? 'Invoice sale' : 'Invoice purchase'),
     amount: invoiceData.total_amount,
-    type: 'expense',
-    category: defaultExpenseCategory,
-    expenseCategory: 'cogs'
+    type: isSale ? 'income' : 'expense',
+    category: isSale ? 'Sales Revenue' : defaultExpenseCategory,
+    expenseCategory: isSale ? undefined : 'cogs'
   };
+```
+
+Also add `transaction_type: null` to the `normalizeInvoiceData` return object — find:
+```
+    payment_status: normalizeNullableString(rawInvoice.payment_status)
 };
 
 const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
