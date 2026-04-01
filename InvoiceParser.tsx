@@ -25,9 +25,9 @@ export const InvoiceParser = ({ appData, onAddToCashbook }: InvoiceParserProps) 
   const cashbookTransaction = useMemo(
     () =>
       invoiceData
-        ? mapInvoiceToTransaction(invoiceData, appData.categories.expense)
+        ? mapInvoiceToTransaction(invoiceData, appData.categories)
         : null,
-    [invoiceData, appData.categories.expense]
+    [invoiceData, appData.categories]
   );
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {

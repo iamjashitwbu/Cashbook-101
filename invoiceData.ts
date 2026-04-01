@@ -36,29 +36,41 @@ export const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
     subtotal: normalizeNullableNumber(rawInvoice.subtotal),
     gst_amount: normalizeNullableNumber(rawInvoice.gst_amount),
     total_amount: normalizeNullableNumber(rawInvoice.total_amount),
-    payment_status: normalizeNullableString(rawInvoice.payment_status)
+    payment_status: normalizeNullableString(rawInvoice.payment_status),
+    transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
   };
 };
 
 export const mapInvoiceToTransaction = (
   invoiceData: InvoiceData,
-  expenseCategories: string[]
+  categories: {
+    income: string[];
+    expense: string[];
+  }
 ): Omit<Transaction, 'id'> | null => {
   if (!invoiceData.invoice_date || invoiceData.total_amount === null) {
     return null;
   }
 
-  const defaultExpenseCategory = selectDefaultExpenseCategory(expenseCategories);
+  const transactionType = invoiceData.transaction_type === 'sale' ? 'income' : 'expense';
+  const defaultIncomeCategory = selectDefaultCategory(categories.income, 'Other Income');
+  const defaultExpenseCategory = selectDefaultCategory(categories.expense, 'Other');
   const descriptionParts = [invoiceData.vendor_name, invoiceData.invoice_number].filter(Boolean);
-
-  return {
+  const transaction: Omit<Transaction, 'id'> = {
     date: invoiceData.invoice_date,
-    description: descriptionParts.join(' - ') || 'Invoice purchase',
+    description:
+      descriptionParts.join(' - ') ||
+      (transactionType === 'income' ? 'Invoice sale' : 'Invoice purchase'),
     amount: invoiceData.total_amount,
-    type: 'expense',
-    category: defaultExpenseCategory,
-    expenseCategory: 'cogs'
+    type: transactionType,
+    category: transactionType === 'income' ? defaultIncomeCategory : defaultExpenseCategory
   };
+
+  if (transactionType === 'expense') {
+    transaction.expenseCategory = 'cogs';
+  }
+
+  return transaction;
 };
 
 const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
@@ -148,6 +160,20 @@ const normalizeNullableDate = (value: unknown): string | null => {
   return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
 };
 
+const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (normalizedValue === 'sale' || normalizedValue === 'purchase') {
+    return normalizedValue;
+  }
+
+  return null;
+};
+
 const formatDate = (date: Date) => {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -155,14 +181,14 @@ const formatDate = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const selectDefaultExpenseCategory = (expenseCategories: string[]) => {
-  if (expenseCategories.includes('Other')) {
-    return 'Other';
+const selectDefaultCategory = (categories: string[], preferredCategory: string) => {
+  if (categories.includes(preferredCategory)) {
+    return preferredCategory;
   }
 
-  if (expenseCategories.length > 0) {
-    return expenseCategories[0];
+  if (categories.length > 0) {
+    return categories[0];
   }
 
-  return 'Other';
+  return preferredCategory;
 };

@@ -23,6 +23,7 @@ type InvoiceData = {
   gst_amount: number | null;
   total_amount: number | null;
   payment_status: string | null;
+  transaction_type: 'sale' | 'purchase' | null;
 };
 
 export async function POST(request: Request) {
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
   }
 
   const firstPageImageBase64 = body.pdfBase64.trim();
+  const invoicePrompt = `${body.prompt} Also determine transaction_type: return 'sale' if this is an invoice issued by us (we are the seller), return 'purchase' if this is an invoice we received (we are the buyer). Add this as transaction_type field in the JSON.`;
 
   if (!firstPageImageBase64) {
     return Response.json({ error: 'Missing invoice image data.' }, { status: 400 });
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
               },
               {
                 type: 'text',
-                text: body.prompt
+                text: invoicePrompt
               }
             ]
           }
@@ -193,7 +195,8 @@ const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
     subtotal: normalizeNullableNumber(rawInvoice.subtotal),
     gst_amount: normalizeNullableNumber(rawInvoice.gst_amount),
     total_amount: normalizeNullableNumber(rawInvoice.total_amount),
-    payment_status: normalizeNullableString(rawInvoice.payment_status)
+    payment_status: normalizeNullableString(rawInvoice.payment_status),
+    transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
   };
 };
 
@@ -282,6 +285,20 @@ const normalizeNullableDate = (value: unknown): string | null => {
 
   const parsedDate = new Date(trimmedValue);
   return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
+};
+
+const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (normalizedValue === 'sale' || normalizedValue === 'purchase') {
+    return normalizedValue;
+  }
+
+  return null;
 };
 
 const formatDate = (date: Date) => {
