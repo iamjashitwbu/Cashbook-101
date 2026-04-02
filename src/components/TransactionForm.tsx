@@ -29,7 +29,8 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
       date,
       category,
       amount: parseFloat(amount),
-      description
+      description,
+      source: 'manual'
     };
 
     if (type === 'expense') {
