@@ -13,6 +13,7 @@ import { BankStatementImport } from './components/BankStatementImport';
 import { InvoiceParser } from './components/InvoiceParser';
 import { formatCurrencySymbol } from './utils/format';
 import { mapInvoiceToTransaction } from './utils/invoiceData';
+import { buildTransactionDuplicateKey } from './utils/bankStatementImport';
 
 type View = 'transactions' | 'summary' | 'invoice-parser';
 
@@ -34,7 +35,7 @@ function App() {
     setAppData(loaded);
 
     if (loaded.entities.length === 0) {
-      const defaultEntity = createEntity('Default Business');
+      const defaultEntity = createEntity('Default Business', '');
       const updated = addEntity(loaded, defaultEntity);
       setAppData(updated);
     }
@@ -49,12 +50,31 @@ function App() {
   };
 
   const addTransactions = (newTransactions: Omit<Transaction, 'id'>[]) => {
-    const importedTransactions: Transaction[] = newTransactions.map((transaction) => ({
+    const existingKeys = new Set(transactions.map((transaction) => buildTransactionDuplicateKey(transaction)));
+    const seenKeys = new Set<string>();
+    const deduplicatedTransactions = newTransactions.filter((transaction) => {
+      const duplicateKey = buildTransactionDuplicateKey(transaction);
+
+      if (existingKeys.has(duplicateKey) || seenKeys.has(duplicateKey)) {
+        return false;
+      }
+
+      seenKeys.add(duplicateKey);
+      return true;
+    });
+    const skippedDuplicates = newTransactions.length - deduplicatedTransactions.length;
+    const importedTransactions: Transaction[] = deduplicatedTransactions.map((transaction) => ({
       ...transaction,
       id: crypto.randomUUID()
     }));
 
     saveTransactions([...transactions, ...importedTransactions]);
+
+    if (newTransactions.every((transaction) => transaction.source === 'bank')) {
+      console.log(
+        `Bank import for entity ${appData.currentEntityId}: imported ${importedTransactions.length}, skipped ${skippedDuplicates} duplicates.`
+      );
+    }
   };
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
@@ -67,7 +87,11 @@ function App() {
   };
 
   const addInvoiceToCashbook = (invoiceData: InvoiceData) => {
-    const invoiceTransaction = mapInvoiceToTransaction(invoiceData, appData.categories.expense);
+    const invoiceTransaction = mapInvoiceToTransaction(
+      invoiceData,
+      appData.categories,
+      currentEntity
+    );
 
     if (!invoiceTransaction) {
       return;
@@ -202,7 +226,11 @@ function App() {
             </div>
           </div>
         ) : view === 'invoice-parser' ? (
-          <InvoiceParser appData={appData} onAddToCashbook={addInvoiceToCashbook} />
+          <InvoiceParser
+            appData={appData}
+            currentEntity={currentEntity}
+            onAddToCashbook={addInvoiceToCashbook}
+          />
         ) : (
           <PLSummary transactions={filteredTransactions} entity={currentEntity} />
         )}
