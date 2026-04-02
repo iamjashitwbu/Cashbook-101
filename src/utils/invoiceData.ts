@@ -1,7 +1,7 @@
 import { InvoiceData, InvoiceLineItem, Transaction } from '../types';
 
 export const INVOICE_EXTRACTION_SYSTEM_PROMPT =
-  'You are an invoice data extractor. Extract the following fields from the invoice and return ONLY a JSON object with no extra text or markdown: vendor_name, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, payment_status. If a field is not found, set it to null.';
+  'You are an invoice data extractor. Extract the following fields from the invoice and return ONLY a JSON object with no extra text or markdown: vendor_name, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, payment_status, transaction_type (return "sale" if we are the seller, "purchase" if we are the buyer). If a field is not found, set it to null.';
 
 export const parseJsonObject = (value: string) => {
   const cleanedValue = value.replace(/```json|```/gi, '').trim();
@@ -36,7 +36,7 @@ export const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
     subtotal: normalizeNullableNumber(rawInvoice.subtotal),
     gst_amount: normalizeNullableNumber(rawInvoice.gst_amount),
     total_amount: normalizeNullableNumber(rawInvoice.total_amount),
-  payment_status: normalizeNullableString(rawInvoice.payment_status),
+    payment_status: normalizeNullableString(rawInvoice.payment_status),
     transaction_type: normalizeTransactionType(rawInvoice.transaction_type)
   };
 };
@@ -51,8 +51,7 @@ export const mapInvoiceToTransaction = (
 
   const defaultExpenseCategory = selectDefaultExpenseCategory(expenseCategories);
   const descriptionParts = [invoiceData.vendor_name, invoiceData.invoice_number].filter(Boolean);
-
-const isSale = invoiceData.transaction_type === 'sale';
+  const isSale = invoiceData.transaction_type === 'sale';
 
   return {
     date: invoiceData.invoice_date,
@@ -62,7 +61,7 @@ const isSale = invoiceData.transaction_type === 'sale';
     category: isSale ? 'Sales Revenue' : defaultExpenseCategory,
     expenseCategory: isSale ? undefined : 'cogs'
   };
-
+};
 
 const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
   if (!Array.isArray(value)) {
@@ -169,11 +168,10 @@ const selectDefaultExpenseCategory = (expenseCategories: string[]) => {
 
   return 'Other';
 };
+
 const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
   if (typeof value !== 'string') return null;
   const v = value.trim().toLowerCase();
   if (v === 'sale' || v === 'purchase') return v;
   return null;
 };
-
-  
