@@ -1,7 +1,7 @@
-import { InvoiceData, InvoiceLineItem, Transaction } from '../types';
+import { Entity, InvoiceData, InvoiceLineItem, Transaction, TransactionType } from '../types';
 
 export const INVOICE_EXTRACTION_SYSTEM_PROMPT =
-  'You are an invoice data extractor. Extract the following fields from the invoice and return ONLY a JSON object with no extra text or markdown: vendor_name, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, payment_status, transaction_type (return "sale" if we are the seller, "purchase" if we are the buyer). If a field is not found, set it to null.';
+  "Extract all invoice data from this image and return ONLY JSON. Fields: seller_name, seller_gstin, buyer_name, buyer_gstin, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, transaction_type. For transaction_type, return 'sale' if this is an invoice issued by us (we are the seller), return 'purchase' if this is an invoice we received (we are the buyer). Set any missing field to null.";
 
 export const parseJsonObject = (value: string) => {
   const cleanedValue = value.replace(/```json|```/gi, '').trim();
@@ -26,9 +26,15 @@ export const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
   }
 
   const rawInvoice = rawValue as Record<string, unknown>;
+  const sellerName = normalizeNullableString(rawInvoice.seller_name);
+  const buyerName = normalizeNullableString(rawInvoice.buyer_name);
 
   return {
-    vendor_name: normalizeNullableString(rawInvoice.vendor_name),
+    vendor_name: normalizeNullableString(rawInvoice.vendor_name) ?? sellerName ?? buyerName,
+    seller_name: sellerName,
+    seller_gstin: normalizeNullableString(rawInvoice.seller_gstin),
+    buyer_name: buyerName,
+    buyer_gstin: normalizeNullableString(rawInvoice.buyer_gstin),
     invoice_number: normalizeNullableString(rawInvoice.invoice_number),
     invoice_date: normalizeNullableDate(rawInvoice.invoice_date),
     due_date: normalizeNullableDate(rawInvoice.due_date),
@@ -43,24 +49,79 @@ export const normalizeInvoiceData = (rawValue: unknown): InvoiceData => {
 
 export const mapInvoiceToTransaction = (
   invoiceData: InvoiceData,
-  expenseCategories: string[]
+  categories: {
+    income: string[];
+    expense: string[];
+  },
+  entity: Entity | undefined
 ): Omit<Transaction, 'id'> | null => {
   if (!invoiceData.invoice_date || invoiceData.total_amount === null) {
     return null;
   }
 
-  const defaultExpenseCategory = selectDefaultExpenseCategory(expenseCategories);
-  const descriptionParts = [invoiceData.vendor_name, invoiceData.invoice_number].filter(Boolean);
-  const isSale = invoiceData.transaction_type === 'sale';
-
-  return {
+  const transactionType = classifyInvoiceTransaction(invoiceData, entity);
+  const defaultIncomeCategory = selectDefaultCategory(categories.income, 'Sales Revenue');
+  const defaultExpenseCategory = selectDefaultCategory(categories.expense, 'Other');
+  const counterpartyName =
+    transactionType === 'income'
+      ? invoiceData.buyer_name ?? invoiceData.vendor_name
+      : invoiceData.seller_name ?? invoiceData.vendor_name;
+  const descriptionParts = [counterpartyName, invoiceData.invoice_number].filter(Boolean);
+  const transaction: Omit<Transaction, 'id'> = {
     date: invoiceData.invoice_date,
-    description: descriptionParts.join(' - ') || (isSale ? 'Invoice sale' : 'Invoice purchase'),
+    description:
+      descriptionParts.join(' - ') ||
+      (transactionType === 'income' ? 'Invoice sale' : 'Invoice purchase'),
     amount: invoiceData.total_amount,
-    type: isSale ? 'income' : 'expense',
-    category: isSale ? 'Sales Revenue' : defaultExpenseCategory,
-    expenseCategory: isSale ? undefined : 'cogs'
+    type: transactionType,
+    category: transactionType === 'income' ? defaultIncomeCategory : defaultExpenseCategory,
+    source: 'invoice'
   };
+
+  if (transactionType === 'expense') {
+    transaction.expenseCategory = 'cogs';
+  }
+
+  return transaction;
+};
+
+export const classifyInvoiceTransaction = (
+  invoiceData: InvoiceData,
+  entity: Entity | undefined
+): TransactionType => {
+  const normalizedBusinessGstin = normalizeComparableValue(entity?.gstin || '');
+  const normalizedSellerGstin = normalizeComparableValue(invoiceData.seller_gstin);
+  const normalizedBuyerGstin = normalizeComparableValue(invoiceData.buyer_gstin);
+
+  if (normalizedBusinessGstin && normalizedSellerGstin === normalizedBusinessGstin) {
+    return 'income';
+  }
+
+  if (normalizedBusinessGstin && normalizedBuyerGstin === normalizedBusinessGstin) {
+    return 'expense';
+  }
+
+  const normalizedBusinessName = normalizeComparableValue(entity?.name || '');
+  const normalizedSellerName = normalizeComparableValue(invoiceData.seller_name);
+  const normalizedBuyerName = normalizeComparableValue(invoiceData.buyer_name);
+
+  if (normalizedBusinessName && normalizedSellerName.includes(normalizedBusinessName)) {
+    return 'income';
+  }
+
+  if (normalizedBusinessName && normalizedBuyerName.includes(normalizedBusinessName)) {
+    return 'expense';
+  }
+
+  if (invoiceData.transaction_type === 'sale') {
+    return 'income';
+  }
+
+  if (invoiceData.transaction_type === 'purchase') {
+    return 'expense';
+  }
+
+  return 'expense';
 };
 
 const normalizeLineItems = (value: unknown): InvoiceLineItem[] => {
@@ -129,26 +190,130 @@ const normalizeNullableDate = (value: unknown): string | null => {
     return null;
   }
 
-  const datePart = trimmedValue.split(' ')[0];
+  const cleanedValue = trimmedValue
+    .replace(/(\d{1,2})(st|nd|rd|th)\b/gi, '$1')
+    .replace(/,/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const monthMap: Record<string, number> = {
+    jan: 1,
+    january: 1,
+    feb: 2,
+    february: 2,
+    mar: 3,
+    march: 3,
+    apr: 4,
+    april: 4,
+    may: 5,
+    jun: 6,
+    june: 6,
+    jul: 7,
+    july: 7,
+    aug: 8,
+    august: 8,
+    sep: 9,
+    sept: 9,
+    september: 9,
+    oct: 10,
+    october: 10,
+    nov: 11,
+    november: 11,
+    dec: 12,
+    december: 12
+  };
+  const buildNormalizedDate = (
+    yearValue: string,
+    monthValue: string | number,
+    dayValue: string
+  ) => {
+    const year = Number.parseInt(yearValue, 10);
+    const month =
+      typeof monthValue === 'number'
+        ? monthValue
+        : monthMap[monthValue.trim().toLowerCase()];
+    const day = Number.parseInt(dayValue, 10);
 
-  if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(datePart)) {
-    const [year, month, day] = datePart.split(/[-/]/);
-    return `${year}-${month}-${day}`;
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day) ||
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31
+    ) {
+      return null;
+    }
+
+    const parsedDate = new Date(year, month - 1, day);
+
+    if (
+      Number.isNaN(parsedDate.getTime()) ||
+      parsedDate.getFullYear() !== year ||
+      parsedDate.getMonth() !== month - 1 ||
+      parsedDate.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return formatDate(parsedDate);
+  };
+
+  if (!/^\d{1,4}[/-]\d{1,2}[/-]\d{1,4}$/.test(cleanedValue)) {
+    const parsedDate = new Date(cleanedValue);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return formatDate(parsedDate);
+    }
   }
 
-  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(datePart)) {
-    const [day, month, year] = datePart.split(/[-/]/);
-    return `${year}-${month}-${day}`;
+  let match = cleanedValue.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+
+  if (match) {
+    const [, day, month, year] = match;
+    return buildNormalizedDate(year, Number.parseInt(month, 10), day);
   }
 
-  if (/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(datePart)) {
-    const parsedDate = new Date(datePart);
-    return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
+  match = cleanedValue.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+
+  if (match) {
+    const [, year, month, day] = match;
+    return buildNormalizedDate(year, Number.parseInt(month, 10), day);
   }
 
-  const parsedDate = new Date(trimmedValue);
-  return Number.isNaN(parsedDate.getTime()) ? null : formatDate(parsedDate);
+  match = cleanedValue.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+
+  if (match) {
+    const [, day, month, year] = match;
+    return buildNormalizedDate(year, month, day);
+  }
+
+  match = cleanedValue.match(/^([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})$/);
+
+  if (match) {
+    const [, month, day, year] = match;
+    return buildNormalizedDate(year, month, day);
+  }
+
+  return null;
 };
+
+const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (normalizedValue === 'sale' || normalizedValue === 'purchase') {
+    return normalizedValue;
+  }
+
+  return null;
+};
+
+const normalizeComparableValue = (value: string | null) =>
+  value?.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^a-z0-9]/g, '') || '';
 
 const formatDate = (date: Date) => {
   const year = date.getFullYear();
@@ -157,21 +322,14 @@ const formatDate = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const selectDefaultExpenseCategory = (expenseCategories: string[]) => {
-  if (expenseCategories.includes('Other')) {
-    return 'Other';
+const selectDefaultCategory = (categories: string[], preferredCategory: string) => {
+  if (categories.includes(preferredCategory)) {
+    return preferredCategory;
   }
 
-  if (expenseCategories.length > 0) {
-    return expenseCategories[0];
+  if (categories.length > 0) {
+    return categories[0];
   }
 
-  return 'Other';
-};
-
-const normalizeTransactionType = (value: unknown): 'sale' | 'purchase' | null => {
-  if (typeof value !== 'string') return null;
-  const v = value.trim().toLowerCase();
-  if (v === 'sale' || v === 'purchase') return v;
-  return null;
+  return preferredCategory;
 };
