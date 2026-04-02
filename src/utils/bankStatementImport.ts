@@ -26,6 +26,14 @@ export interface BankStatementPreviewEntry {
   type: TransactionType;
 }
 
+export interface ExtractedBankStatementRow {
+  date: string;
+  description: string;
+  debit: string;
+  credit: string;
+  balance: string;
+}
+
 export interface ParsedBankStatement {
   bankName: SupportedBank;
   entries: BankStatementPreviewEntry[];
@@ -158,7 +166,8 @@ export const convertPreviewEntriesToTransactions = (
       description: entry.description,
       amount: entry.amount,
       type: entry.type,
-      category: entry.type === 'income' ? defaultIncomeCategory : defaultExpenseCategory
+      category: entry.type === 'income' ? defaultIncomeCategory : defaultExpenseCategory,
+      source: 'bank'
     };
 
     if (entry.type === 'expense') {
@@ -166,6 +175,52 @@ export const convertPreviewEntriesToTransactions = (
     }
 
     return transaction;
+  });
+};
+
+export const convertExtractedRowsToPreviewEntries = (
+  rows: ExtractedBankStatementRow[]
+): BankStatementPreviewEntry[] =>
+  rows
+    .map((row) => {
+      try {
+        const debitAmount = parseAmount(row.debit);
+        const creditAmount = parseAmount(row.credit);
+
+        if (debitAmount === 0 && creditAmount === 0) {
+          return null;
+        }
+
+        return {
+          date: parseDate(row.date),
+          description: buildDescription(row.description),
+          amount: creditAmount > 0 ? creditAmount : debitAmount,
+          type: creditAmount > 0 ? 'income' : 'expense'
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((entry): entry is BankStatementPreviewEntry => entry !== null);
+
+export const removeDuplicatePreviewEntries = (
+  entries: BankStatementPreviewEntry[],
+  existingTransactions: Transaction[]
+) => {
+  const existingKeys = new Set(
+    existingTransactions.map((transaction) => buildTransactionDuplicateKey(transaction))
+  );
+  const seenKeys = new Set<string>();
+
+  return entries.filter((entry) => {
+    const duplicateKey = buildTransactionDuplicateKey(entry);
+
+    if (existingKeys.has(duplicateKey) || seenKeys.has(duplicateKey)) {
+      return false;
+    }
+
+    seenKeys.add(duplicateKey);
+    return true;
   });
 };
 
@@ -305,6 +360,15 @@ const buildDescription = (primaryValue: string | undefined, secondaryValue?: str
   }
 
   return `${primaryText} (${secondaryText})`;
+};
+
+export const buildTransactionDuplicateKey = (
+  entry:
+    | BankStatementPreviewEntry
+    | Pick<Transaction, 'date' | 'amount' | 'description'>
+) => {
+  const normalizedDescription = entry.description.trim().toLowerCase().replace(/\s+/g, ' ');
+  return `${entry.date}__${entry.amount.toFixed(2)}__${normalizedDescription}`;
 };
 
 const isPlaceholderValue = (value: string) => {
