@@ -22,13 +22,43 @@ export const loadAppData = (): AppData => {
   if (!data) {
     return DEFAULT_APP_DATA;
   }
-  return JSON.parse(data);
+
+  const parsedData = JSON.parse(data) as Partial<AppData>;
+  const entities = Array.isArray(parsedData.entities)
+    ? parsedData.entities.map((entity) => ({
+        ...entity,
+        name: entity.name || '',
+        gstin: entity.gstin || '',
+        createdAt: entity.createdAt || new Date().toISOString()
+      }))
+    : [];
+
+  return {
+    entities,
+    currentEntityId: parsedData.currentEntityId || entities[0]?.id || '',
+    transactions: Object.fromEntries(
+      Object.entries(parsedData.transactions || {}).map(([entityId, entityTransactions]) => [
+        entityId,
+        Array.isArray(entityTransactions)
+          ? entityTransactions.map((transaction) => ({
+              ...transaction,
+              source: transaction.source || 'manual'
+            }))
+          : []
+      ])
+    ),
+    categories: {
+      income: parsedData.categories?.income || DEFAULT_INCOME_CATEGORIES,
+      expense: parsedData.categories?.expense || DEFAULT_EXPENSE_CATEGORIES
+    }
+  };
 };
 
-export const createEntity = (name: string): Entity => {
+export const createEntity = (name: string, gstin = ''): Entity => {
   return {
     id: crypto.randomUUID(),
     name,
+    gstin,
     createdAt: new Date().toISOString()
   };
 };
@@ -51,6 +81,27 @@ export const switchEntity = (appData: AppData, entityId: string): AppData => {
   const updated = {
     ...appData,
     currentEntityId: entityId
+  };
+  saveAppData(updated);
+  return updated;
+};
+
+export const updateEntity = (
+  appData: AppData,
+  entityId: string,
+  updates: Pick<Entity, 'name' | 'gstin'>
+): AppData => {
+  const updated = {
+    ...appData,
+    entities: appData.entities.map((entity) =>
+      entity.id === entityId
+        ? {
+            ...entity,
+            name: updates.name,
+            gstin: updates.gstin
+          }
+        : entity
+    )
   };
   saveAppData(updated);
   return updated;
