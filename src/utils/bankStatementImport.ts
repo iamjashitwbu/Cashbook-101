@@ -140,9 +140,9 @@ export const parseBankStatementCsv = (fileContents: string): ParsedBankStatement
   }
 
   const columnMap = createColumnMap(headerRow);
-  const entries = dataRows
-    .map((row) => detectedDefinition.parseEntry(row, columnMap))
-    .filter((entry): entry is BankStatementPreviewEntry => entry !== null);
+ const entries = dataRows
+  .map((row) => detectedDefinition.parseEntry(row, columnMap))
+  .filter((entry) => entry !== null) as BankStatementPreviewEntry[];
 
   return {
     bankName: detectedDefinition.bankName,
@@ -201,7 +201,7 @@ export const convertExtractedRowsToPreviewEntries = (
         return null;
       }
     })
-    .filter((entry): entry is BankStatementPreviewEntry => entry !== null);
+   .filter((entry) => entry !== null) as BankStatementPreviewEntry[];
 
 export const removeDuplicatePreviewEntries = (
   entries: BankStatementPreviewEntry[],
