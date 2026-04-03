@@ -68,7 +68,7 @@ export const BankStatementImport = ({
     } else if (fileType === 'pdf') {
       setDetectedBank(null);
       setPreviewEntries([]);
-      setError('PDF parsing not implemented yet. Convert PDF to CSV for now.');
+      setError('PDF import coming next. Please convert PDF to CSV for now.');
     } else {
       setError('Unsupported file type.');
     }
