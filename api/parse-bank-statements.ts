@@ -53,11 +53,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await response.json();
     const content = data.choices[0].message.content;
 
-    const jsonStart = content.indexOf('[');
-    const jsonEnd = content.lastIndexOf(']');
-    const jsonString = content.substring(jsonStart, jsonEnd + 1);
-
-    const rows = JSON.parse(jsonString);
+  let rows = [];
+try {
+  const jsonStart = content.indexOf('[');
+  const jsonEnd = content.lastIndexOf(']');
+  const jsonString = content.substring(jsonStart, jsonEnd + 1);
+  rows = JSON.parse(jsonString);
+} catch (e) {
+  return res.status(500).json({ error: 'Model returned invalid JSON', raw: content });
+}
 
     return res.status(200).json({ rows });
   } catch (err) {
