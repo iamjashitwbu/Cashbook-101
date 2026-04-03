@@ -23,21 +23,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Extract ALL bank transactions from bank statement images. Return ONLY JSON array with fields: date, description, amount, type (debit or credit).'
-          },
-          {
-            role: 'user',
-            content: prompt
+    body: JSON.stringify({
+  model: GROQ_MODEL,
+  messages: [
+    {
+      role: "system",
+      content: "Extract ALL bank transactions from the bank statement images. Return ONLY a JSON array with fields: date, description, amount, type (debit or credit). Extract every row from all pages."
+    },
+    {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: prompt
+        },
+        ...pageImagesBase64.map((img: string) => ({
+          type: "image_url",
+          image_url: {
+            url: `data:image/png;base64,${img}`
           }
-        ],
-        temperature: 0
-      })
+        }))
+      ]
+    }
+  ],
+  temperature: 0
+})
     });
 
     const data = await response.json();
