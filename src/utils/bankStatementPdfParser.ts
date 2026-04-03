@@ -1,8 +1,31 @@
 import { ExtractedBankStatementRow } from './bankStatementImport';
 
-const BANK_STATEMENT_EXTRACTION_PROMPT =
-  'Extract all bank statement transactions from these statement page images and return ONLY a JSON array. Each item must be an object with exactly these string fields: date, description, debit, credit, balance. Include every transaction row you can read. Use empty string for missing debit, credit, or balance values. Do not return markdown, explanations, or any extra text.';
+const BANK_STATEMENT_EXTRACTION_PROMPT = `
+You are reading a bank statement.
 
+Extract ALL transactions from the bank statement table.
+
+Return ONLY a JSON array.
+Each item must be in this exact format:
+
+[
+  {
+    "date": "YYYY-MM-DD",
+    "description": "transaction description",
+    "amount": 1234.56,
+    "type": "debit" or "credit"
+  }
+]
+
+Rules:
+- Extract every row from the transaction table
+- Do NOT include opening balance or closing balance
+- Do NOT include headers
+- Debit means money out
+- Credit means money in
+- Amount must be positive
+- Return JSON only, no explanation
+`;
 export const parseBankStatementPdfImages = async (
   pageImagesBase64: string[]
 ): Promise<ExtractedBankStatementRow[]> => {
