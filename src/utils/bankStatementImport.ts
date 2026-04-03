@@ -132,12 +132,14 @@ export const parseBankStatementCsv = (fileContents: string): ParsedBankStatement
     throw new Error(UNRECOGNIZED_FORMAT_ERROR);
   }
 
-  const [headerRow, ...dataRows] = rows;
-  const detectedDefinition = detectBankStatementDefinition(headerRow);
+ const [headerRow, ...dataRows] = rows;
+const detectedDefinition = detectBankStatementDefinition(headerRow);
 
-  if (!detectedDefinition) {
-    throw new Error(UNRECOGNIZED_FORMAT_ERROR);
-  }
+if (!detectedDefinition) {
+  return {
+    entries: parseGenericRows(dataRows)
+  };
+}
 
   const columnMap = createColumnMap(headerRow);
   const entries = dataRows
@@ -399,3 +401,26 @@ const selectDefaultCategory = (categories: string[], preferredCategory: string) 
 
   return preferredCategory;
 };
+function parseGenericRows(rows: string[][]) {
+  const transactions = [];
+
+  for (const row of rows) {
+    const rowText = row.join(" ");
+
+    const dateMatch = rowText.match(/\d{2}[\/-]\d{2}[\/-]\d{4}/);
+    const amountMatch = rowText.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/);
+
+    if (dateMatch && amountMatch) {
+      const amount = parseFloat(amountMatch[0].replace(/,/g, ""));
+
+      transactions.push({
+        date: dateMatch[0],
+        description: rowText,
+        amount: Math.abs(amount),
+        type: amount < 0 ? "expense" : "income"
+      });
+    }
+  }
+
+  return transactions;
+}
