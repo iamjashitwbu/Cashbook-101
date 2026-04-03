@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Pencil } from 'lucide-react';
 import { AppData, Entity } from '../types';
-import { createEntity, addEntity, switchEntity, deleteEntity } from '../utils/storage';
+import { createEntity, addEntity, switchEntity, deleteEntity, updateEntity } from '../utils/storage';
 
 interface EntityManagerProps {
   appData: AppData;
@@ -11,7 +11,11 @@ interface EntityManagerProps {
 export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newEntityName, setNewEntityName] = useState('');
+  const [newEntityGstin, setNewEntityGstin] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
+  const [editingEntityName, setEditingEntityName] = useState('');
+  const [editingEntityGstin, setEditingEntityGstin] = useState('');
 
   const currentEntity = appData.entities.find((e) => e.id === appData.currentEntityId);
 
@@ -19,10 +23,11 @@ export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) 
     e.preventDefault();
     if (!newEntityName.trim()) return;
 
-    const entity = createEntity(newEntityName);
+    const entity = createEntity(newEntityName.trim(), newEntityGstin.trim());
     const updated = addEntity(appData, entity);
     onAppDataChange(updated);
     setNewEntityName('');
+    setNewEntityGstin('');
     setShowForm(false);
     setIsOpen(false);
   };
@@ -38,6 +43,39 @@ export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) 
       const updated = deleteEntity(appData, entityId);
       onAppDataChange(updated);
     }
+  };
+
+  const handleStartEdit = (entity: Entity) => {
+    setEditingEntityId(entity.id);
+    setEditingEntityName(entity.name);
+    setEditingEntityGstin(entity.gstin);
+    setShowForm(false);
+  };
+
+  const handleUpdateEntity = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingEntityId || !editingEntityName.trim()) {
+      return;
+    }
+
+    const updated = updateEntity(appData, editingEntityId, {
+      name: editingEntityName.trim(),
+      gstin: editingEntityGstin.trim()
+    });
+    onAppDataChange(updated);
+    setEditingEntityId(null);
+    setEditingEntityName('');
+    setEditingEntityGstin('');
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingEntityId(null);
+    setEditingEntityName('');
+    setEditingEntityGstin('');
+    setNewEntityName('');
+    setNewEntityGstin('');
   };
 
   return (
@@ -76,6 +114,15 @@ export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) 
                   >
                     {entity.name}
                   </p>
+                  {entity.gstin && (
+                    <p className="mt-0.5 text-xs text-gray-500">{entity.gstin}</p>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleStartEdit(entity)}
+                  className="text-gray-500 hover:text-gray-700 p-1"
+                >
+                  <Pencil size={16} />
                 </button>
                 <button
                   onClick={() => handleDeleteEntity(entity.id)}
@@ -90,7 +137,10 @@ export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) 
           <div className="border-t border-gray-200 p-3">
             {!showForm ? (
               <button
-                onClick={() => setShowForm(true)}
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingEntityId(null);
+                }}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
                 <Plus size={16} />
@@ -106,6 +156,13 @@ export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) 
                   className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   autoFocus
                 />
+                <input
+                  type="text"
+                  value={newEntityGstin}
+                  onChange={(e) => setNewEntityGstin(e.target.value)}
+                  placeholder="GSTIN"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -115,7 +172,41 @@ export const EntityManager = ({ appData, onAppDataChange }: EntityManagerProps) 
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={handleCancelForm}
+                    className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded text-sm font-medium hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+            {editingEntityId && (
+              <form onSubmit={handleUpdateEntity} className="mt-3 space-y-2 border-t border-gray-200 pt-3">
+                <input
+                  type="text"
+                  value={editingEntityName}
+                  onChange={(e) => setEditingEntityName(e.target.value)}
+                  placeholder="Entity name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={editingEntityGstin}
+                  onChange={(e) => setEditingEntityGstin(e.target.value)}
+                  placeholder="GSTIN"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelForm}
                     className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded text-sm font-medium hover:bg-gray-300"
                   >
                     Cancel

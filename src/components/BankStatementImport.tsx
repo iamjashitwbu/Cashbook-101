@@ -4,9 +4,11 @@ import { AppData, Transaction } from '../types';
 import {
   BankStatementPreviewEntry,
   convertPreviewEntriesToTransactions,
-  parseBankStatementCsv
+  parseBankStatementCsv,
+  removeDuplicatePreviewEntries
 } from '../utils/bankStatementImport';
 import { formatCurrencySymbol } from '../utils/format';
+import { convertPDFTextToCSV, extractTextFromPDF } from '../utils/pdfParser';
 
 interface BankStatementImportProps {
   appData: AppData;
@@ -24,6 +26,7 @@ export const BankStatementImport = ({
   const [detectedBank, setDetectedBank] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState('');
   const [error, setError] = useState('');
+  const currentTransactions = appData.transactions[appData.currentEntityId] || [];
 
   const importedTransactions = useMemo(
     () => convertPreviewEntriesToTransactions(previewEntries, appData.categories),
@@ -42,48 +45,60 @@ export const BankStatementImport = ({
     setIsOpen(false);
   };
 
- const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
 
-  if (!file) {
-    return;
-  }
+    if (!file) {
+      return;
+    }
 
-  setSelectedFileName(file.name);
-  setError('');
+    setSelectedFileName(file.name);
+    setError('');
 
-  try {
-    const fileType = file.name.split('.').pop()?.toLowerCase();
+    try {
+      const lowerCaseFileName = file.name.toLowerCase();
+      const fileType = lowerCaseFileName.endsWith('.pdf') ? 'pdf' : 'csv';
+      let csvText = '';
 
-    if (fileType === 'csv') {
-      const fileContents = await file.text();
-      const parsedStatement = parseBankStatementCsv(fileContents);
-
-      setDetectedBank(parsedStatement.bankName);
-      setPreviewEntries(parsedStatement.entries);
-
-      if (parsedStatement.entries.length === 0) {
-        setError('No valid transactions were found in this CSV file.');
+      if (fileType === 'pdf') {
+        const pdfText = await extractTextFromPDF(file);
+        csvText = convertPDFTextToCSV(pdfText);
+      } else {
+        csvText = await file.text();
       }
-    } else if (fileType === 'pdf') {
+
+      const parsedStatement = parseBankStatementCsv(csvText);
+      const nextPreviewEntries = parsedStatement.entries;
+      const nextDetectedBank = parsedStatement.bankName;
+
+      const deduplicatedEntries = removeDuplicatePreviewEntries(
+        nextPreviewEntries,
+        currentTransactions
+      );
+
+      setDetectedBank(nextDetectedBank);
+      setPreviewEntries(deduplicatedEntries);
+
+      if (nextPreviewEntries.length === 0) {
+        setError('No valid transactions were found in this file.');
+      } else if (deduplicatedEntries.length === 0) {
+        setError('All detected transactions already exist for this entity.');
+      } else if (deduplicatedEntries.length < nextPreviewEntries.length) {
+        setError('Duplicate transactions were skipped using date, amount, and description.');
+      }
+    } catch (parseError) {
       setDetectedBank(null);
       setPreviewEntries([]);
-      setError('PDF import coming next. Please convert PDF to CSV for now.');
-    } else {
-      setError('Unsupported file type.');
+      setError(
+        parseError instanceof Error
+          ? parseError.message
+          : 'Unable to parse this bank statement file.'
+      );
+    } finally {
+      event.target.value = '';
     }
-  } catch (parseError) {
-    setDetectedBank(null);
-    setPreviewEntries([]);
-    setError(
-      parseError instanceof Error
-        ? parseError.message
-        : 'Unable to parse this bank statement file.'
-    );
-  } finally {
-    event.target.value = '';
-  }
-};
+  };
+
   const handleImport = () => {
     if (importedTransactions.length === 0) {
       return;
@@ -117,7 +132,7 @@ export const BankStatementImport = ({
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Import Bank Statement</h2>
                   <p className="mt-1 text-sm text-gray-600">
-                    Upload an HDFC, SBI, or ICICI CSV file to preview transactions before import.
+                    Upload an HDFC, SBI, or ICICI CSV file, or a PDF statement, to preview transactions before import.
                   </p>
                 </div>
                 <button
@@ -135,8 +150,8 @@ export const BankStatementImport = ({
                     <div className="rounded-full bg-blue-600 p-3 text-white">
                       <Upload size={22} />
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Choose a CSV file</p>
+                  <div>
+                      <p className="font-semibold text-gray-900">Choose a CSV or PDF file</p>
                       <p className="text-sm text-gray-600">
                         Supported banks: HDFC, SBI, ICICI
                       </p>
@@ -147,7 +162,7 @@ export const BankStatementImport = ({
                   </div>
                   <input
                     type="file"
-                 accept=".csv,.pdf,text/csv,application/pdf"
+                    accept=".csv,.pdf,text/csv,application/pdf"
                     onChange={handleFileChange}
                     className="hidden"
                   />

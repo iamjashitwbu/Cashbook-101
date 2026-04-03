@@ -1,17 +1,26 @@
 import { ChangeEvent, useMemo, useState } from 'react';
 import { AlertCircle, FileText, Loader2, Plus, Upload } from 'lucide-react';
-import { AppData, InvoiceData } from '../types';
+import * as pdfjsLib from 'pdfjs-dist';
+import { AppData, Entity, InvoiceData } from '../types';
 import { exportToExcel } from '../utils/exportExcel';
 import { formatCurrencySymbol } from '../utils/format';
 import { mapInvoiceToTransaction } from '../utils/invoiceData';
-import { parseInvoicePdf } from '../utils/invoiceParser';
+import { parseInvoiceImageBase64 } from '../utils/invoiceParser';
 
 interface InvoiceParserProps {
   appData: AppData;
+  currentEntity?: Entity;
   onAddToCashbook: (invoiceData: InvoiceData) => void;
 }
 
-export const InvoiceParser = ({ appData, onAddToCashbook }: InvoiceParserProps) => {
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+export const InvoiceParser = ({
+  appData,
+  currentEntity,
+  onAddToCashbook
+}: InvoiceParserProps) => {
   const [selectedFileName, setSelectedFileName] = useState('');
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [error, setError] = useState('');
@@ -21,9 +30,9 @@ export const InvoiceParser = ({ appData, onAddToCashbook }: InvoiceParserProps) 
   const cashbookTransaction = useMemo(
     () =>
       invoiceData
-        ? mapInvoiceToTransaction(invoiceData, appData.categories.expense)
+        ? mapInvoiceToTransaction(invoiceData, appData.categories, currentEntity)
         : null,
-    [invoiceData, appData.categories.expense]
+    [invoiceData, appData.categories, currentEntity]
   );
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +56,8 @@ export const InvoiceParser = ({ appData, onAddToCashbook }: InvoiceParserProps) 
     setIsParsing(true);
 
     try {
-      const parsedInvoice = await parseInvoicePdf(file);
+      const pdfBase64 = await convertPdfToJpegBase64(file);
+      const parsedInvoice = await parseInvoiceImageBase64(pdfBase64);
       setInvoiceData(parsedInvoice);
     } catch (parseError) {
       setInvoiceData(null);
@@ -102,7 +112,7 @@ export const InvoiceParser = ({ appData, onAddToCashbook }: InvoiceParserProps) 
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Invoice Parser</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Upload a PDF invoice, extract structured fields with Claude, then send the result into your cashbook.
+              Upload a PDF invoice, extract structured fields with AI, then send the result into your cashbook.
             </p>
           </div>
 
@@ -246,3 +256,48 @@ export const InvoiceParser = ({ appData, onAddToCashbook }: InvoiceParserProps) 
 
 const formatNullableCurrency = (value: number | null) =>
   value === null ? '-' : formatCurrencySymbol(value);
+
+const convertPdfToJpegBase64 = async (file: File): Promise<string> => {
+  let pdfDocument: Awaited<ReturnType<typeof pdfjsLib.getDocument>['promise']> | undefined;
+
+  try {
+    const pdfBytes = new Uint8Array(await file.arrayBuffer());
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+    pdfDocument = await loadingTask.promise;
+
+    const firstPage = await pdfDocument.getPage(1);
+    const viewport = firstPage.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Unable to prepare the uploaded PDF for parsing.');
+    }
+
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    await firstPage.render({
+      canvasContext: context,
+      viewport
+    }).promise;
+    firstPage.cleanup();
+
+    const base64Image = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+
+    canvas.width = 0;
+    canvas.height = 0;
+
+    if (!base64Image) {
+      throw new Error('Unable to convert the uploaded PDF into an image.');
+    }
+
+    return base64Image;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : 'Unable to read the uploaded PDF.'
+    );
+  } finally {
+    pdfDocument?.destroy();
+  }
+};
