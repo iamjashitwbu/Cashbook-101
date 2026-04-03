@@ -84,58 +84,6 @@ export const BankStatementImport = ({
     event.target.value = '';
   }
 };
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    setSelectedFileName(file.name);
-    setError('');
-
-    try {
-     const fileType = file.name.split('.').pop()?.toLowerCase();
-
-if (fileType === 'csv') {
-  const fileContents = await file.text();
-  const parsedStatement = parseBankStatementCsv(fileContents);
-
-  setDetectedBank(parsedStatement.bankName);
-  setPreviewEntries(parsedStatement.entries);
-
-  if (parsedStatement.entries.length === 0) {
-    setError('No valid transactions were found in this CSV file.');
-  }
-if (fileType === 'csv') {
-  const fileContents = await file.text();
-  const parsedStatement = parseBankStatementCsv(fileContents);
-
-  setDetectedBank(parsedStatement.bankName);
-  setPreviewEntries(parsedStatement.entries);
-
-  if (parsedStatement.entries.length === 0) {
-    setError('No valid transactions were found in this CSV file.');
-  }
-} else if (fileType === 'pdf') {
-  setError('PDF import coming next. Please convert PDF to CSV for now.');
-}
-
-if (parsedStatement.entries.length === 0) {
-  setError('No valid transactions were found in this CSV file.');
-}
-    } catch (parseError) {
-      setDetectedBank(null);
-      setPreviewEntries([]);
-      setError(
-        parseError instanceof Error
-          ? parseError.message
-          : 'Unable to parse this bank statement CSV.'
-      );
-    } finally {
-      event.target.value = '';
-    }
-  };
-
   const handleImport = () => {
     if (importedTransactions.length === 0) {
       return;
