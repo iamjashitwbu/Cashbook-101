@@ -53,12 +53,21 @@ export const BankStatementImport = ({
     setError('');
 
     try {
-      const fileContents = await file.text();
-      const parsedStatement = parseBankStatementCsv(fileContents);
+     const fileType = file.name.split('.').pop()?.toLowerCase();
 
-      setDetectedBank(parsedStatement.bankName);
-      setPreviewEntries(parsedStatement.entries);
+if (fileType === 'csv') {
+  const fileContents = await file.text();
+  const parsedStatement = parseBankStatementCsv(fileContents);
 
+  setDetectedBank(parsedStatement.bankName);
+  setPreviewEntries(parsedStatement.entries);
+
+  if (parsedStatement.entries.length === 0) {
+    setError('No valid transactions were found in this CSV file.');
+  }
+} else if (fileType === 'pdf') {
+  setError('PDF import coming next. Please convert PDF to CSV for now.');
+}
       if (parsedStatement.entries.length === 0) {
         setError('No valid transactions were found in this CSV file.');
       }
@@ -138,7 +147,7 @@ export const BankStatementImport = ({
                   </div>
                   <input
                     type="file"
-                    accept=".csv,text/csv"
+                 accept=".csv,.pdf,text/csv,application/pdf"
                     onChange={handleFileChange}
                     className="hidden"
                   />
