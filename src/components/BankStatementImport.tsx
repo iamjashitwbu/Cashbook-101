@@ -42,7 +42,48 @@ export const BankStatementImport = ({
     setIsOpen(false);
   };
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+ const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  setSelectedFileName(file.name);
+  setError('');
+
+  try {
+    const fileType = file.name.split('.').pop()?.toLowerCase();
+
+    if (fileType === 'csv') {
+      const fileContents = await file.text();
+      const parsedStatement = parseBankStatementCsv(fileContents);
+
+      setDetectedBank(parsedStatement.bankName);
+      setPreviewEntries(parsedStatement.entries);
+
+      if (parsedStatement.entries.length === 0) {
+        setError('No valid transactions were found in this CSV file.');
+      }
+    } else if (fileType === 'pdf') {
+      setDetectedBank(null);
+      setPreviewEntries([]);
+      setError('PDF parsing not implemented yet. Convert PDF to CSV for now.');
+    } else {
+      setError('Unsupported file type.');
+    }
+  } catch (parseError) {
+    setDetectedBank(null);
+    setPreviewEntries([]);
+    setError(
+      parseError instanceof Error
+        ? parseError.message
+        : 'Unable to parse this bank statement file.'
+    );
+  } finally {
+    event.target.value = '';
+  }
+};
     const file = event.target.files?.[0];
 
     if (!file) {
