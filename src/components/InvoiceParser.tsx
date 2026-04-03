@@ -13,8 +13,10 @@ interface InvoiceParserProps {
   onAddToCashbook: (invoiceData: InvoiceData) => void;
 }
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+import * as pdfjsLib from "pdfjs-dist";
+import worker from "pdfjs-dist/build/pdf.worker?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
 
 export const InvoiceParser = ({
   appData,
