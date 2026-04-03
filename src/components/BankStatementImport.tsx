@@ -106,12 +106,23 @@ if (fileType === 'csv') {
   if (parsedStatement.entries.length === 0) {
     setError('No valid transactions were found in this CSV file.');
   }
+if (fileType === 'csv') {
+  const fileContents = await file.text();
+  const parsedStatement = parseBankStatementCsv(fileContents);
+
+  setDetectedBank(parsedStatement.bankName);
+  setPreviewEntries(parsedStatement.entries);
+
+  if (parsedStatement.entries.length === 0) {
+    setError('No valid transactions were found in this CSV file.');
+  }
 } else if (fileType === 'pdf') {
   setError('PDF import coming next. Please convert PDF to CSV for now.');
 }
-      if (parsedStatement.entries.length === 0) {
-        setError('No valid transactions were found in this CSV file.');
-      }
+
+if (parsedStatement.entries.length === 0) {
+  setError('No valid transactions were found in this CSV file.');
+}
     } catch (parseError) {
       setDetectedBank(null);
       setPreviewEntries([]);
