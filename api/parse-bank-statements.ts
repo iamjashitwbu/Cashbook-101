@@ -45,10 +45,15 @@ async function extractFromImages(images: string[], apiKey: string, prompt: strin
     throw new Error(JSON.stringify(data));
   }
   const content = data.choices[0].message.content;
-  const jsonStart = content.indexOf('[');
-  const jsonEnd = content.lastIndexOf(']');
-  return JSON.parse(content.substring(jsonStart, jsonEnd + 1));
+ const jsonStart = content.indexOf('[');
+const jsonEnd = content.lastIndexOf(']');
+
+if (jsonStart === -1 || jsonEnd === -1) {
+  throw new Error("Invalid JSON from Groq: " + content);
 }
+
+const jsonString = content.substring(jsonStart, jsonEnd + 1);
+return JSON.parse(jsonString);}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -61,15 +66,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const batchSize = 2;
     const allRows: any[] = [];
 
-    for (let i = 0; i < pageImagesBase64.length; i += batchSize) {
-      const batch = pageImagesBase64.slice(i, i + batchSize);
-      const rows = await extractFromImages(batch, apiKey, prompt);
-      allRows.push(...rows);
-      if (i + batchSize < pageImagesBase64.length) {
-  await new Promise(resolve => setTimeout(resolve, 20000));
-    }
+ for (let i = 0; i < pageImagesBase64.length; i += batchSize) {
+  const batch = pageImagesBase64.slice(i, i + batchSize);
+  const rows = await extractFromImages(batch, apiKey, prompt);
+  allRows.push(...rows);
 
-    return res.status(200).json({ rows: allRows });
+  if (i + batchSize < pageImagesBase64.length) {
+    await new Promise(resolve => setTimeout(resolve, 20000));
+  }
+}
+
+return res.status(200).json({ rows: allRows });
   } catch (err) {
     return res.status(500).json({ error: (err as Error).message });
   }
