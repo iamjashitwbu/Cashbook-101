@@ -60,13 +60,22 @@ export const BankStatementImport = ({
       const fileType = lowerCaseFileName.endsWith('.pdf') ? 'pdf' : 'csv';
       let csvText = '';
 
-      if (fileType === 'pdf') {
-        const pdfText = await extractTextFromPDF(file);
-        csvText = convertPDFTextToCSV(pdfText);
-      } else {
-        csvText = await file.text();
-      }
-
+    if (fileType === 'pdf') {
+  const pageImagesBase64 = await convertPDFToImages(file);
+  const rows = await parseBankStatementPdfImages(pageImagesBase64);
+  const deduplicatedEntries = removeDuplicatePreviewEntries(
+    rows.map(row => ({
+      date: row.date,
+      description: row.description,
+      amount: row.amount,
+      type: row.type === 'credit' ? 'income' : 'expense'
+    })),
+    currentTransactions
+  );
+  setDetectedBank('PDF');
+  setPreviewEntries(deduplicatedEntries);
+  return;
+}
       const parsedStatement = parseBankStatementCsv(csvText);
       const nextPreviewEntries = parsedStatement.entries;
       const nextDetectedBank = parsedStatement.bankName;
