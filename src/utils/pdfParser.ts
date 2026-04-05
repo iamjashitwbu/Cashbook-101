@@ -75,3 +75,32 @@ export const convertPDFTextToCSV = (text: string): string => {
     .filter(Boolean)
     .join('\n');
 };
+export const convertPDFToImages = async (file: File): Promise<string[]> => {
+  let pdfDocument: Awaited<ReturnType<typeof pdfjsLib.getDocument>['promise']> | undefined;
+  try {
+    const pdfBytes = new Uint8Array(await file.arrayBuffer());
+    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+    pdfDocument = await loadingTask.promise;
+    const pageImages: string[] = [];
+
+    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+      const page = await pdfDocument.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext('2d')!;
+      await page.render({ canvasContext: context, viewport }).promise;
+      const base64 = canvas.toDataURL('image/png').split(',')[1];
+      pageImages.push(base64);
+    }
+
+    return pageImages;
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : 'Unable to convert PDF to images.'
+    );
+  } finally {
+    pdfDocument?.destroy();
+  }
+};
