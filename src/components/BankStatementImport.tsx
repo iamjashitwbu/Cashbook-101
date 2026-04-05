@@ -137,7 +137,7 @@ export const BankStatementImport = ({
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 p-4">
           <div className="mx-auto flex min-h-full max-w-5xl items-center justify-center">
-            <div className="w-full overflow-hidden rounded-2xl bg-white shadow-2xl">
+           <div className="w-full overflow-hidden rounded-2xl bg-white shadow-2xl">
               <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Import Bank Statement</h2>
@@ -154,7 +154,7 @@ export const BankStatementImport = ({
                 </button>
               </div>
 
-              <div className="space-y-5 px-6 py-5">
+             <div className="space-y-5 px-6 py-5">
                 <label className="block rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/60 p-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50">
                   <div className="flex flex-col items-center gap-3">
                     <div className="rounded-full bg-blue-600 p-3 text-white">
@@ -212,7 +212,7 @@ export const BankStatementImport = ({
                         </p>
                       </div>
 
-                      <div className="max-h-[26rem] overflow-auto rounded-xl border border-gray-200">
+                    <div className="max-h-[26rem] overflow-auto rounded-xl border border-gray-200">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="sticky top-0 bg-gray-50">
                             <tr>
