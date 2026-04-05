@@ -47,13 +47,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ...pageImagesBase64.map((img: string) => ({
           type: "image_url",
           image_url: {
-            url: `data:image/png;base64,${img}`
+            url: `data:image/jpeg;base64,${img}`
           }
         }))
       ]
     }
   ],
   temperature: 0
+max_tokens: 8000
 })
     });
 
