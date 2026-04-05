@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama3-70b-8192';
+const GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -65,6 +65,6 @@ try {
 
     return res.status(200).json({ rows });
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to parse bank statement' });
+   return res.status(500).json({ error: (err as Error).message });
   }
 }
