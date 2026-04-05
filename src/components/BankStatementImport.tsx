@@ -8,7 +8,8 @@ import {
   removeDuplicatePreviewEntries
 } from '../utils/bankStatementImport';
 import { formatCurrencySymbol } from '../utils/format';
-import { convertPDFTextToCSV, extractTextFromPDF } from '../utils/pdfParser';
+import { convertPDFTextToCSV, extractTextFromPDF, convertPDFToImages } from '../utils/pdfParser';
+import { parseBankStatementPdfImages } from '../utils/bankStatementPdfParser';
 
 interface BankStatementImportProps {
   appData: AppData;
