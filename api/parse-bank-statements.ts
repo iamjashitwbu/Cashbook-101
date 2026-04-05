@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { pageImagesBase64, prompt } = req.body;
-    const batchSize = 1;
+    const batchSize = 2;
     const allRows: any[] = [];
 
     for (let i = 0; i < pageImagesBase64.length; i += batchSize) {
