@@ -37,7 +37,7 @@ async function extractFromImages(images: string[], apiKey: string, prompt: strin
         }
       ],
       temperature: 0,
-      max_tokens: 8000
+      max_tokens: 4000
     })
   });
  const data = await response.json();
