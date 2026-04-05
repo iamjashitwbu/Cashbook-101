@@ -65,6 +65,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const batch = pageImagesBase64.slice(i, i + batchSize);
       const rows = await extractFromImages(batch, apiKey, prompt);
       allRows.push(...rows);
+      if (i + batchSize < pageImagesBase64.length) {
+  await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
     return res.status(200).json({ rows: allRows });
