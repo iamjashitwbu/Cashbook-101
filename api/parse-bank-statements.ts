@@ -40,7 +40,10 @@ async function extractFromImages(images: string[], apiKey: string, prompt: strin
       max_tokens: 8000
     })
   });
-  const data = await response.json();
+ const data = await response.json();
+  if (!data.choices || !data.choices[0]) {
+    throw new Error(JSON.stringify(data));
+  }
   const content = data.choices[0].message.content;
   const jsonStart = content.indexOf('[');
   const jsonEnd = content.lastIndexOf(']');
