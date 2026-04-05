@@ -32,7 +32,7 @@ export const parseBankStatementPdfImages = async (
   let response: Response;
 
   try {
-    response = await fetch('/api/parse-bank-statement', {
+    response = await fetch('/api/parse-bank-statements', {
       method: 'POST',
       headers: {
         'content-type': 'application/json'
