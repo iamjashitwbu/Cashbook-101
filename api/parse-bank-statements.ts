@@ -37,7 +37,7 @@ async function extractFromImages(images: string[], apiKey: string, prompt: strin
         }
       ],
       temperature: 0,
-      max_tokens: 4000
+      max_tokens: 8000
     })
   });
  const data = await response.json();
@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rows = await extractFromImages(batch, apiKey, prompt);
       allRows.push(...rows);
       if (i + batchSize < pageImagesBase64.length) {
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 15000));
     }
 
     return res.status(200).json({ rows: allRows });
