@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { pageImagesBase64, prompt } = req.body;
-    const batchSize = 2;
+    const batchSize = 1;
     const allRows: any[] = [];
 
     for (let i = 0; i < pageImagesBase64.length; i += batchSize) {
@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rows = await extractFromImages(batch, apiKey, prompt);
       allRows.push(...rows);
       if (i + batchSize < pageImagesBase64.length) {
-  await new Promise(resolve => setTimeout(resolve, 15000));
+  await new Promise(resolve => setTimeout(resolve, 20000));
     }
 
     return res.status(200).json({ rows: allRows });
