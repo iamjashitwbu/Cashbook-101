@@ -210,7 +210,7 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.category}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{transaction.description || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600" title={transaction.rawDescription}>{transaction.description || '-'}</td>
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm text-right font-semibold ${
                       transaction.type === 'income' ? 'text-green-600' : 'text-red-600'

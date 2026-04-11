@@ -234,7 +234,7 @@ export const BankStatementImport = ({
                                 <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
                                   {new Date(entry.date).toLocaleDateString()}
                                 </td>
-                                <td className="px-4 py-3 text-sm text-gray-700">
+                                <td className="px-4 py-3 text-sm text-gray-700" title={entry.rawDescription}>
                                   {entry.description || 'Transaction'}
                                 </td>
                                 <td className="whitespace-nowrap px-4 py-3 text-sm">
