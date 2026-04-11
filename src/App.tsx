@@ -13,7 +13,6 @@ import { BankStatementImport } from './components/BankStatementImport';
 import { InvoiceParser } from './components/InvoiceParser';
 import { formatCurrencySymbol } from './utils/format';
 import { mapInvoiceToTransaction } from './utils/invoiceData';
-import { buildTransactionDuplicateKey } from './utils/bankStatementImport';
 
 type View = 'transactions' | 'summary' | 'invoice-parser';
 
@@ -50,27 +49,27 @@ function App() {
   };
 
   const addTransactions = (newTransactions: Omit<Transaction, 'id'>[]) => {
-    const existingKeys = new Set(transactions.map((transaction) => buildTransactionDuplicateKey(transaction)));
-    const seenKeys = new Set<string>();
-    const deduplicatedTransactions = newTransactions.filter((transaction) => {
-      const duplicateKey = buildTransactionDuplicateKey(transaction);
+    const existingKeys = new Set(
+      transactions.map((tx) => `${tx.date}-${tx.amount}-${tx.description}`)
+    );
+    const importedTransactions: Transaction[] = newTransactions
+      .filter((transaction) =>
+        !existingKeys.has(
+          `${transaction.date}-${transaction.amount}-${transaction.description}`
+        )
+      )
+      .map((transaction) => ({
+        ...transaction,
+        id: crypto.randomUUID()
+      }));
+    const nextTransactions = [...transactions, ...importedTransactions];
+    const skippedDuplicates = newTransactions.length - importedTransactions.length;
 
-      if (existingKeys.has(duplicateKey) || seenKeys.has(duplicateKey)) {
-        return false;
-      }
-
-      seenKeys.add(duplicateKey);
-      return true;
-    });
-    const skippedDuplicates = newTransactions.length - deduplicatedTransactions.length;
-    const importedTransactions: Transaction[] = deduplicatedTransactions.map((transaction) => ({
-      ...transaction,
-      id: crypto.randomUUID()
-    }));
-
-    saveTransactions([...transactions, ...importedTransactions]);
+    saveTransactions(nextTransactions);
 
     if (newTransactions.every((transaction) => transaction.source === 'bank')) {
+      console.log('Parsed Transactions:', newTransactions);
+      console.log('Unique Transactions:', nextTransactions);
       console.log(
         `Bank import for entity ${appData.currentEntityId}: imported ${importedTransactions.length}, skipped ${skippedDuplicates} duplicates.`
       );

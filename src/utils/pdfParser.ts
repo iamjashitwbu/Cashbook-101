@@ -2,6 +2,12 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+interface RawTextItem {
+  str: string;
+  transform: number[];
+}
+
 export const extractTextFromPDF = async (file: File): Promise<string> => {
   let pdfDocument: Awaited<ReturnType<typeof pdfjsLib.getDocument>['promise']> | undefined;
 
@@ -14,38 +20,25 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
     for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
       const page = await pdfDocument.getPage(pageNumber);
       const textContent = await page.getTextContent();
-      const pageLines: string[] = [];
-      let currentLine = '';
+      const textItems = textContent.items
+        .map(getRawTextItem)
+        .filter((item): item is RawTextItem => item !== null);
+      const lines = buildTextLines(textItems);
 
-      textContent.items.forEach((item) => {
-        if (!('str' in item)) {
-          return;
-        }
+      console.log('TOTAL TEXT ITEMS:', textItems.length);
+      console.log('TOTAL LINES:', lines.length);
+      console.log('SAMPLE LINES:', lines.slice(0, 20));
 
-        const text = item.str.trim();
+      const pageText = lines.join('\n');
 
-        if (text) {
-          currentLine = currentLine ? `${currentLine} ${text}` : text;
-        }
-
-        if ('hasEOL' in item && item.hasEOL && currentLine) {
-          pageLines.push(currentLine.replace(/\s+/g, ' ').trim());
-          currentLine = '';
-        }
-      });
-
-      if (currentLine) {
-        pageLines.push(currentLine.replace(/\s+/g, ' ').trim());
-      }
-
-      const pageText = pageLines.join('\n').trim();
-
-      if (pageText) {
+      if (pageText.trim()) {
         pageTexts.push(pageText);
       }
     }
 
-    return pageTexts.join('\n');
+    const finalText = pageTexts.join('\n');
+    console.log('FINAL TEXT:', finalText);
+    return finalText;
   } catch (error) {
     throw new Error(
       error instanceof Error ? error.message : 'Unable to read the uploaded PDF.'
@@ -53,6 +46,41 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
   } finally {
     pdfDocument?.destroy();
   }
+};
+
+const getRawTextItem = (item: unknown): RawTextItem | null => {
+  if (!item || typeof item !== 'object' || !('str' in item) || !('transform' in item)) {
+    return null;
+  }
+
+  const transform = item.transform;
+
+  if (!Array.isArray(transform)) {
+    return null;
+  }
+
+  const normalizedTransform = transform.map(Number);
+  const x = normalizedTransform[4];
+  const y = normalizedTransform[5];
+
+  if (Number.isNaN(x) || Number.isNaN(y)) {
+    return null;
+  }
+
+  return {
+    str: String(item.str),
+    transform: normalizedTransform
+  };
+};
+
+function buildTextLines(textItems: RawTextItem[]) {
+  const sorted = [...textItems].sort(
+    (a, b) =>
+      b.transform[5] - a.transform[5] ||
+      a.transform[4] - b.transform[4]
+  );
+
+  return sorted.map((item) => item.str);
 };
 
 export const convertPDFTextToCSV = (text: string): string => {

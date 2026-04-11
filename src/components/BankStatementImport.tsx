@@ -106,9 +106,12 @@ export const BankStatementImport = ({
     }
 
     // Convert the SAME previewEntries array that the user sees
-    const transactionsToImport = convertPreviewEntriesToTransactions(previewEntries, appData.categories);
-    console.log('Converted to transactions:', transactionsToImport.length);
-    onImport(transactionsToImport);
+    const transactions = convertPreviewEntriesToTransactions(previewEntries, appData.categories);
+
+    console.log('Parsed Transactions:', transactions);
+    console.log('Unique Transactions:', transactions);
+
+    onImport(transactions);
     handleClose();
   };
 
@@ -136,7 +139,7 @@ export const BankStatementImport = ({
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Import Bank Statement</h2>
                   <p className="mt-1 text-sm text-gray-600">
-                    Upload an HDFC, SBI, or ICICI CSV file, or a PDF statement, to preview transactions before import.
+                    Upload a bank statement (PDF or CSV) to preview transactions before import.
                   </p>
                 </div>
                 <button
@@ -157,7 +160,7 @@ export const BankStatementImport = ({
                   <div>
                       <p className="font-semibold text-gray-900">Choose a CSV or PDF file</p>
                       <p className="text-sm text-gray-600">
-                        Supported banks: HDFC, SBI, ICICI
+                        PDF or CSV files
                       </p>
                     </div>
                     <span className="rounded-full bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">

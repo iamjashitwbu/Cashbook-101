@@ -212,17 +212,11 @@ export const removeDuplicatePreviewEntries = (
   const existingKeys = new Set(
     existingTransactions.map((transaction) => buildTransactionDuplicateKey(transaction))
   );
-  const seenKeys = new Set<string>();
 
   return entries.filter((entry) => {
     const duplicateKey = buildTransactionDuplicateKey(entry);
 
-    if (existingKeys.has(duplicateKey) || seenKeys.has(duplicateKey)) {
-      return false;
-    }
-
-    seenKeys.add(duplicateKey);
-    return true;
+    return !existingKeys.has(duplicateKey);
   });
 };
 

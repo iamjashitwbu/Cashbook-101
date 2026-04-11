@@ -23,7 +23,7 @@ export const processBankStatementPdf = async (
       description: row.description,
       rawDescription: row.rawDescription,
       amount: row.amount,
-      type: row.type === 'credit' ? 'income' : 'expense'
+      type: row.type
     }));
   } catch (error) {
     if (error instanceof Error) {
