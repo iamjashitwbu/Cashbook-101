@@ -1,23 +1,21 @@
 import { InvoiceData } from '../types';
 import { INVOICE_EXTRACTION_SYSTEM_PROMPT } from './invoiceData';
 
-export const parseInvoiceImageBase64 = async (pdfBase64: string): Promise<InvoiceData> => {
+export const parseInvoicePdf = async (pdfFile: File): Promise<InvoiceData> => {
+  const formData = new FormData();
+  formData.append('file', pdfFile);
+  formData.append('prompt', INVOICE_EXTRACTION_SYSTEM_PROMPT);
+
   let response: Response;
 
   try {
     response = await fetch('/api/parse-invoice', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        pdfBase64,
-        prompt: INVOICE_EXTRACTION_SYSTEM_PROMPT
-      })
+      body: formData
     });
   } catch {
     throw new Error(
-      'The invoice parser service is unreachable right now. If you are running locally, start the app with Vercel so the /api route is available.'
+      'The invoice parser service is unreachable right now. Please make sure the local dev server is running.'
     );
   }
 
@@ -29,8 +27,12 @@ export const parseInvoiceImageBase64 = async (pdfBase64: string): Promise<Invoic
     throw new Error('The invoice parser returned an unreadable response.');
   }
 
+  if (responseData.error) {
+    throw new Error(responseData.error);
+  }
+
   if (!response.ok) {
-    throw new Error(responseData.error || 'The invoice parsing request failed.');
+    throw new Error('The invoice parsing request failed.');
   }
 
   if (!responseData.invoiceData) {

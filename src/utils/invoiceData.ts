@@ -1,22 +1,24 @@
 import { Entity, InvoiceData, InvoiceLineItem, Transaction, TransactionType } from '../types';
 
 export const INVOICE_EXTRACTION_SYSTEM_PROMPT =
-  "Extract all invoice data from this image and return ONLY JSON. Fields: seller_name, seller_gstin, buyer_name, buyer_gstin, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, transaction_type. For transaction_type, return 'sale' if this is an invoice issued by us (we are the seller), return 'purchase' if this is an invoice we received (we are the buyer). Set any missing field to null.";
+  "Extract all invoice data from this image and return ONLY JSON. Fields: seller_name, seller_gstin, buyer_name, buyer_gstin, invoice_number, invoice_date, due_date, line_items (array of: description, quantity, unit_price, amount), subtotal, gst_amount, total_amount, transaction_type. For transaction_type, return 'sale' if this is an invoice issued by us (we are the seller), return 'purchase' if this is an invoice we received (we are the buyer). Set any missing field to null. Respond ONLY with a valid JSON object. No explanation, no markdown, no code fences. Start your response with { and end with }.";
 
-export const parseJsonObject = (value: string) => {
+export const parseJsonObject = (value: string): unknown | null => {
   const cleanedValue = value.replace(/```json|```/gi, '').trim();
+  const jsonStart = cleanedValue.indexOf('{');
+  const jsonEnd = cleanedValue.lastIndexOf('}');
+
+  if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+    console.error('Raw invoice response:', value);
+    return null;
+  }
 
   try {
-    return JSON.parse(cleanedValue);
-  } catch {
-    const jsonStart = cleanedValue.indexOf('{');
-    const jsonEnd = cleanedValue.lastIndexOf('}');
-
-    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-      throw new Error('The model returned an unexpected response format.');
-    }
-
     return JSON.parse(cleanedValue.slice(jsonStart, jsonEnd + 1));
+  } catch (error) {
+    console.error('Raw invoice response:', value);
+    console.error('Invoice JSON parse error:', error);
+    return null;
   }
 };
 

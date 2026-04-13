@@ -1,12 +1,12 @@
 import type { BankStatementPreviewEntry } from './bankStatementImport';
-import { extractTextFromPDF } from './pdfParser';
+import { extractBankPdfText } from './bankPdfTextExtractor';
 import { parseBankStatementRows } from '../../lib/parseBankStatementRows';
 
 export const processBankStatementPdf = async (
   pdfFile: File
 ): Promise<BankStatementPreviewEntry[]> => {
   try {
-    const fullText = await extractTextFromPDF(pdfFile);
+    const fullText = await extractBankPdfText(pdfFile);
 
     if (!fullText || !fullText.trim()) {
       throw new Error('The bank statement parser did not find any text in the PDF.');

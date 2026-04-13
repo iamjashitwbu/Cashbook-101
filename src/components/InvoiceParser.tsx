@@ -4,7 +4,7 @@ import { AppData, Entity, InvoiceData } from '../types';
 import { exportToExcel } from '../utils/exportExcel';
 import { formatCurrencySymbol } from '../utils/format';
 import { mapInvoiceToTransaction } from '../utils/invoiceData';
-import { parseInvoiceImageBase64 } from '../utils/invoiceParser';
+import { parseInvoicePdf } from '../utils/invoiceParser';
 
 interface InvoiceParserProps {
   appData: AppData;
@@ -52,8 +52,8 @@ export const InvoiceParser = ({
     setIsParsing(true);
 
     try {
-      setError('Invoice parsing disabled.');
-setInvoiceData(null);
+      const parsedInvoice = await parseInvoicePdf(file);
+      setInvoiceData(parsedInvoice);
     } catch (parseError) {
       setInvoiceData(null);
       setError(
@@ -84,20 +84,27 @@ setInvoiceData(null);
       return;
     }
 
-    exportToExcel({ transactions: [cashbookTransaction] });
+    exportToExcel({
+      transactions: [
+        {
+          ...cashbookTransaction,
+          id: crypto.randomUUID()
+        }
+      ]
+    });
   };
 
   const detailRows = invoiceData
     ? [
-        ['Vendor Name', invoiceData.vendor_name],
-        ['Invoice Number', invoiceData.invoice_number],
-        ['Invoice Date', invoiceData.invoice_date],
-        ['Due Date', invoiceData.due_date],
-        ['Subtotal', formatNullableCurrency(invoiceData.subtotal)],
-        ['GST Amount', formatNullableCurrency(invoiceData.gst_amount)],
-        ['Total Amount', formatNullableCurrency(invoiceData.total_amount)],
-        ['Payment Status', invoiceData.payment_status]
-      ]
+      ['Vendor Name', invoiceData.vendor_name],
+      ['Invoice Number', invoiceData.invoice_number],
+      ['Invoice Date', invoiceData.invoice_date],
+      ['Due Date', invoiceData.due_date],
+      ['Subtotal', formatNullableCurrency(invoiceData.subtotal)],
+      ['GST Amount', formatNullableCurrency(invoiceData.gst_amount)],
+      ['Total Amount', formatNullableCurrency(invoiceData.total_amount)],
+      ['Payment Status', invoiceData.payment_status]
+    ]
     : [];
 
   return (
