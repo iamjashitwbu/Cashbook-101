@@ -109,16 +109,16 @@ export const InvoiceParser = ({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white p-6 shadow-md">
+      <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Invoice Parser</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <h2 className="text-2xl font-bold text-white">Invoice Parser</h2>
+            <p className="mt-1 text-sm font-medium text-[#9ca3af]">
               Upload a PDF invoice, extract structured fields with AI, then send the result into your cashbook.
             </p>
           </div>
 
-          <label className="inline-flex cursor-pointer items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 font-semibold text-blue-700 transition-colors hover:border-blue-300 hover:bg-blue-100">
+          <label className="inline-flex cursor-pointer items-center gap-3 rounded-xl border border-white/[0.12] bg-[#7c6ff7] px-5 py-3 font-semibold text-white transition-colors hover:bg-[#6d5ff0]">
             {isParsing ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
             {isParsing ? 'Parsing invoice...' : 'Upload PDF Invoice'}
             <input
@@ -132,52 +132,52 @@ export const InvoiceParser = ({
         </div>
 
         {selectedFileName && (
-          <div className="mt-4 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-700">
-            <span className="font-medium">Selected file:</span> {selectedFileName}
+          <div className="mt-4 rounded-lg border border-white/[0.06] bg-[#11131f] px-4 py-3 text-sm text-[#d1d5db]">
+            <span className="font-medium text-white">Selected file:</span> {selectedFileName}
           </div>
         )}
 
         {error && (
-          <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-500/30 bg-[#2b1012] px-4 py-3 text-sm text-red-200">
+            <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-400" />
             <p>{error}</p>
           </div>
         )}
 
         {successMessage && (
-          <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <div className="mt-4 rounded-lg border border-green-500/30 bg-[#102113] px-4 py-3 text-sm text-green-200">
             {successMessage}
           </div>
         )}
 
         {invoiceData && !cashbookTransaction && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="mt-4 rounded-lg border border-amber-500/30 bg-[#2d210b] px-4 py-3 text-sm text-amber-200">
             We extracted the invoice, but it is missing a usable invoice date or total amount for cashbook/export actions.
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-2xl bg-white p-6 shadow-md">
+        <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6">
           <div className="mb-4 flex items-center gap-2">
-            <FileText size={20} className="text-blue-600" />
-            <h3 className="text-xl font-semibold text-gray-900">Parsed Results</h3>
+            <FileText size={20} className="text-[#7c6ff7]" />
+            <h3 className="text-xl font-semibold text-white">Parsed Results</h3>
           </div>
 
           {!invoiceData ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-14 text-center text-gray-500">
+            <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#11131f] px-6 py-14 text-center text-[#9ca3af]">
               Upload a PDF invoice to see extracted fields here.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-gray-200">
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody className="divide-y divide-gray-200 bg-white">
+            <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#11131f]">
+              <table className="min-w-full divide-y divide-white/[0.06]">
+                <tbody className="divide-y divide-white/[0.06] bg-[#11131f]">
                   {detailRows.map(([label, value]) => (
-                    <tr key={label}>
-                      <td className="w-44 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
+                    <tr key={label} className="odd:bg-[#11131f] even:bg-[#10111c]">
+                      <td className="w-44 bg-[#11131f] px-4 py-3 text-sm font-semibold text-[#9ca3af]">
                         {label}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{value || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-white">{value || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -189,7 +189,7 @@ export const InvoiceParser = ({
             <button
               onClick={handleAddToCashbook}
               disabled={!invoiceData || !cashbookTransaction || !appData.currentEntityId}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#7c6ff7] px-5 py-2.5 font-semibold text-white transition-colors hover:bg-[#6d5ff0] disabled:cursor-not-allowed disabled:bg-white/[0.08] disabled:text-[#9ca3af]"
             >
               <Plus size={18} />
               Add to Cashbook
@@ -197,7 +197,7 @@ export const InvoiceParser = ({
             <button
               onClick={handleExport}
               disabled={!invoiceData || !cashbookTransaction}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#4ade80] px-5 py-2.5 font-semibold text-black transition-colors hover:bg-[#3ccb6a] disabled:cursor-not-allowed disabled:bg-white/[0.08] disabled:text-[#9ca3af]"
             >
               <FileText size={18} />
               Export to Excel
@@ -205,43 +205,43 @@ export const InvoiceParser = ({
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-6 shadow-md">
-          <h3 className="mb-4 text-xl font-semibold text-gray-900">Line Items</h3>
+        <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6">
+          <h3 className="mb-4 text-xl font-semibold text-white">Line Items</h3>
 
           {!invoiceData || invoiceData.line_items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-14 text-center text-gray-500">
+            <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#11131f] px-6 py-14 text-center text-[#9ca3af]">
               No line items extracted yet.
             </div>
           ) : (
-            <div className="overflow-auto rounded-xl border border-gray-200">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="overflow-auto rounded-xl border border-white/[0.06] bg-[#11131f]">
+              <table className="min-w-full divide-y divide-white/[0.06]">
+                <thead className="bg-[#11131f]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
                       Description
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
                       Qty
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
                       Unit Price
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">
                       Amount
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-white/[0.06] bg-[#11131f]">
                   {invoiceData.line_items.map((item, index) => (
-                    <tr key={`${item.description ?? 'item'}-${index}`}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{item.description || '-'}</td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-700">
+                    <tr key={`${item.description ?? 'item'}-${index}`} className="odd:bg-[#11131f] even:bg-[#10111c] hover:bg-white/5">
+                      <td className="px-4 py-3 text-sm text-white">{item.description || '-'}</td>
+                      <td className="px-4 py-3 text-right text-sm text-[#cbd5e1]">
                         {item.quantity ?? '-'}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-700">
+                      <td className="px-4 py-3 text-right text-sm text-[#cbd5e1]">
                         {formatNullableCurrency(item.unit_price)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
+                      <td className="px-4 py-3 text-right text-sm font-medium text-white">
                         {formatNullableCurrency(item.amount)}
                       </td>
                     </tr>

@@ -53,32 +53,32 @@ export const CategoryManager = ({ appData, onAppDataChange }: CategoryManagerPro
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-2 rounded-[10px] border border-white/[0.12] bg-transparent px-4 py-2 text-white transition-colors hover:bg-white/[0.04]"
       >
         <Settings size={20} />
         Manage Categories
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
-            <div className="sticky top-0 bg-gray-50 border-b border-gray-200 px-6 py-4">
-              <h2 className="text-xl font-bold text-gray-800">Manage Categories</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="max-h-96 w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/[0.06] bg-[#1a1a24]">
+            <div className="sticky top-0 border-b border-white/[0.06] bg-[#1a1a24] px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Manage Categories</h2>
             </div>
 
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="font-semibold text-gray-700 mb-3">Income Categories</h3>
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">Income Categories</h3>
                 <div className="space-y-2 mb-4">
                   {incomeCategories.map((cat) => (
                     <div
                       key={cat}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#0f0f14] p-2"
                     >
-                      <span className="text-gray-700">{cat}</span>
+                      <span className="text-white">{cat}</span>
                       <button
                         onClick={() => handleRemoveIncomeCategory(cat)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-[#f87171] hover:text-red-300"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -92,11 +92,11 @@ export const CategoryManager = ({ appData, onAppDataChange }: CategoryManagerPro
                     onChange={(e) => setNewIncomeCategory(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleAddIncomeCategory()}
                     placeholder="New income category"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    className="flex-1 rounded-xl border border-white/[0.12] bg-[#0f0f14] px-3 py-2 text-sm text-white outline-none placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#7c6ff7]/30"
                   />
                   <button
                     onClick={handleAddIncomeCategory}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    className="flex items-center gap-1 rounded-[10px] bg-[#7c6ff7] px-4 py-2 text-white transition-colors hover:bg-[#6d5ff0]"
                   >
                     <Plus size={16} />
                     Add
@@ -104,18 +104,18 @@ export const CategoryManager = ({ appData, onAppDataChange }: CategoryManagerPro
                 </div>
               </div>
 
-              <div className="border-t pt-6">
-                <h3 className="font-semibold text-gray-700 mb-3">Expense Categories</h3>
+              <div className="border-t border-white/[0.06] pt-6">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">Expense Categories</h3>
                 <div className="space-y-2 mb-4">
                   {expenseCategories.map((cat) => (
                     <div
                       key={cat}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-[#0f0f14] p-2"
                     >
-                      <span className="text-gray-700">{cat}</span>
+                      <span className="text-white">{cat}</span>
                       <button
                         onClick={() => handleRemoveExpenseCategory(cat)}
-                        className="text-red-600 hover:text-red-800"
+                        className="text-[#f87171] hover:text-red-300"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -129,11 +129,11 @@ export const CategoryManager = ({ appData, onAppDataChange }: CategoryManagerPro
                     onChange={(e) => setNewExpenseCategory(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleAddExpenseCategory()}
                     placeholder="New expense category"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    className="flex-1 rounded-xl border border-white/[0.12] bg-[#0f0f14] px-3 py-2 text-sm text-white outline-none placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#7c6ff7]/30"
                   />
                   <button
                     onClick={handleAddExpenseCategory}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    className="flex items-center gap-1 rounded-[10px] bg-[#7c6ff7] px-4 py-2 text-white transition-colors hover:bg-[#6d5ff0]"
                   >
                     <Plus size={16} />
                     Add
@@ -142,16 +142,16 @@ export const CategoryManager = ({ appData, onAppDataChange }: CategoryManagerPro
               </div>
             </div>
 
-            <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+            <div className="flex justify-end gap-3 border-t border-white/[0.06] bg-[#0f0f14] px-6 py-4">
               <button
                 onClick={handleCancel}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded font-medium hover:bg-gray-300 transition-colors"
+                className="rounded-[10px] border border-white/[0.12] bg-transparent px-6 py-2 font-medium text-white transition-colors hover:bg-white/[0.04]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
+                className="rounded-[10px] bg-[#7c6ff7] px-6 py-2 font-medium text-white transition-colors hover:bg-[#6d5ff0]"
               >
                 Save Changes
               </button>

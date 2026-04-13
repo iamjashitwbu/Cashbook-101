@@ -75,36 +75,36 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
 
   if (transactionsWithBalance.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-12 text-center">
-        <p className="text-gray-500 text-lg">No transactions yet. Add your first entry above!</p>
+      <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-12 text-center">
+        <p className="text-lg text-[#9ca3af]">No transactions yet. Add your first entry above!</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1a1a24]">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-white/[0.06] bg-transparent">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Balance</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Date</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Type</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Category</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Description</th>
+              <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Amount</th>
+              <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Balance</th>
+              <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-white/[0.06]">
             {transactionsWithBalance.map((transaction) => {
               const isEditing = editingId === transaction.id;
 
               if (isEditing) {
                 return (
-                  <tr key={transaction.id} className="bg-blue-50 border-l-4 border-blue-400">
+                  <tr key={transaction.id} className="border-l-4 border-[#7c6ff7] bg-white/[0.04]">
                     {/* Date (non-editable) */}
-                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-3 whitespace-nowrap text-sm text-[#9ca3af]">
                       {new Date(transaction.date).toLocaleDateString()}
                     </td>
 
@@ -123,7 +123,7 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                             category: cats[0] ?? ''
                           }));
                         }}
-                        className="text-sm border border-blue-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="rounded border border-white/[0.12] bg-[#0f0f14] px-2 py-1 text-sm text-white outline-none focus:ring-2 focus:ring-[#7c6ff7]/30"
                       >
                         <option value="income">income</option>
                         <option value="expense">expense</option>
@@ -135,7 +135,7 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                       <select
                         value={editState.category}
                         onChange={(e) => setEditState((prev) => ({ ...prev, category: e.target.value }))}
-                        className="text-sm border border-blue-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="rounded border border-white/[0.12] bg-[#0f0f14] px-2 py-1 text-sm text-white outline-none focus:ring-2 focus:ring-[#7c6ff7]/30"
                       >
                         {allCategories.map((cat) => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -149,7 +149,7 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                         type="text"
                         value={editState.description}
                         onChange={(e) => setEditState((prev) => ({ ...prev, description: e.target.value }))}
-                        className="w-full text-sm border border-blue-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="w-full rounded border border-white/[0.12] bg-[#0f0f14] px-2 py-1 text-sm text-white outline-none placeholder:text-[#9ca3af] focus:ring-2 focus:ring-[#7c6ff7]/30"
                         placeholder="Description"
                       />
                     </td>
@@ -162,26 +162,26 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                         step="0.01"
                         value={editState.amount}
                         onChange={(e) => setEditState((prev) => ({ ...prev, amount: e.target.value }))}
-                        className="w-28 text-sm border border-blue-300 rounded px-2 py-1 bg-white text-right focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="w-28 rounded border border-white/[0.12] bg-[#0f0f14] px-2 py-1 text-right text-sm text-white outline-none focus:ring-2 focus:ring-[#7c6ff7]/30"
                       />
                     </td>
 
                     {/* Balance (unchanged during edit) */}
-                    <td className="px-6 py-3 whitespace-nowrap text-sm text-right text-gray-400">—</td>
+                    <td className="px-6 py-3 whitespace-nowrap text-right text-sm text-[#9ca3af]">-</td>
 
                     {/* Save / Cancel */}
                     <td className="px-6 py-3 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => saveEdit(transaction)}
-                          className="text-green-600 hover:text-green-800 transition-colors"
+                          className="text-[#4ade80] transition-colors hover:text-green-300"
                           title="Save"
                         >
                           <Check size={18} />
                         </button>
                         <button
                           onClick={cancelEdit}
-                          className="text-gray-500 hover:text-gray-700 transition-colors"
+                          className="text-[#9ca3af] transition-colors hover:text-white"
                           title="Cancel"
                         >
                           <X size={18} />
@@ -193,27 +193,27 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
               }
 
               return (
-                <tr key={transaction.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <tr key={transaction.id} className="bg-transparent transition-colors hover:bg-white/[0.04]">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                     {new Date(transaction.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
                         transaction.type === 'income'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-[#4ade80]/15 text-[#4ade80]'
+                          : 'bg-[#f87171]/15 text-[#f87171]'
                       }`}
                     >
                       {transaction.type === 'income' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                       {transaction.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.category}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600" title={transaction.rawDescription}>{transaction.description || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{transaction.category}</td>
+                  <td className="px-6 py-4 text-sm text-[#9ca3af]" title={transaction.rawDescription}>{transaction.description || '-'}</td>
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm text-right font-semibold ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      transaction.type === 'income' ? 'text-[#4ade80]' : 'text-[#f87171]'
                     }`}
                   >
                     {transaction.type === 'income' ? '+' : '-'}
@@ -221,7 +221,7 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                   </td>
                   <td
                     className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${
-                      transaction.balance >= 0 ? 'text-gray-900' : 'text-red-600'
+                      transaction.balance >= 0 ? 'text-white' : 'text-[#f87171]'
                     }`}
                   >
                     {formatCurrencySymbol(transaction.balance)}
@@ -230,14 +230,14 @@ export const TransactionList = ({ transactions, appData, onDelete, onEdit }: Tra
                     <div className="flex items-center justify-center gap-3">
                       <button
                         onClick={() => startEdit(transaction)}
-                        className="text-blue-500 hover:text-blue-700 transition-colors"
+                        className="text-[#7c6ff7] transition-colors hover:text-[#a78bfa]"
                         title="Edit transaction"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
                         onClick={() => onDelete(transaction.id)}
-                        className="text-red-600 hover:text-red-800 transition-colors"
+                        className="text-[#f87171] transition-colors hover:text-red-300"
                         title="Delete transaction"
                       >
                         <Trash2 size={18} />

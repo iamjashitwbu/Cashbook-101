@@ -46,13 +46,13 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
   const hasActiveFilters = filters.dateRange !== null || filters.category !== '';
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Filter size={20} className="text-gray-600" />
-          <h2 className="text-xl font-bold text-gray-800">Filters</h2>
+          <Filter size={20} className="text-[#9ca3af]" />
+          <h2 className="text-2xl font-bold text-white">Filters</h2>
           {hasActiveFilters && (
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            <span className="rounded-full bg-[#7c6ff7]/20 px-2.5 py-0.5 text-xs font-medium text-[#7c6ff7]">
               Active
             </span>
           )}
@@ -61,7 +61,7 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="text-sm text-red-600 hover:text-red-800 font-medium flex items-center gap-1"
+              className="flex items-center gap-1 text-sm font-medium text-[#f87171] hover:text-red-300"
             >
               <X size={16} />
               Clear
@@ -69,7 +69,7 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm font-medium text-[#7c6ff7] hover:text-[#a78bfa]"
           >
             {isExpanded ? 'Hide' : 'Show'}
           </button>
@@ -77,9 +77,9 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
       </div>
 
       {isExpanded && (
-        <div className="space-y-4 border-t border-gray-200 pt-4">
+        <div className="space-y-4 border-t border-white/[0.06] pt-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
               Date Range
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -90,7 +90,7 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
                   onChange={(e) =>
                     handleDateRangeChange(e.target.value, filters.dateRange?.end || '')
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-3 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
                   placeholder="Start date"
                 />
               </div>
@@ -101,7 +101,7 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
                   onChange={(e) =>
                     handleDateRangeChange(filters.dateRange?.start || '', e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-3 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
                   placeholder="End date"
                 />
               </div>
@@ -109,13 +109,13 @@ export const Filters = ({ filters, onFiltersChange, transactions, appData }: Fil
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
               Category
             </label>
             <select
               value={filters.category}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-3 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
             >
               <option value="">All Categories</option>
               <optgroup label="Used Categories">

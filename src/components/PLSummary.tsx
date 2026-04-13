@@ -48,7 +48,6 @@ export const PLSummary = ({ transactions, entity }: PLSummaryProps) => {
   const monthTransactions = getMonthTransactions(exportMonth);
   const pl = calculatePLData(monthTransactions);
 
-  const totalIncome = pl.revenue + pl.otherIncome;
   const grossProfit = pl.revenue - pl.cogs;
   const operatingProfit = grossProfit - pl.operatingExpenses;
   const profitBeforeTax = operatingProfit + pl.otherIncome - pl.otherExpenses;

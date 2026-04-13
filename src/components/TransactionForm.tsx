@@ -46,8 +46,8 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Add Transaction</h2>
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6">
+      <h2 className="mb-6 text-2xl font-bold text-white">Add Transaction</h2>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <button
@@ -58,8 +58,8 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
           }}
           className={`py-3 px-4 rounded-lg font-semibold transition-all ${
             type === 'income'
-              ? 'bg-green-500 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-[#4ade80] text-[#0f0f14]'
+              : 'border border-white/[0.12] bg-transparent text-[#9ca3af] hover:text-white'
           }`}
         >
           Income
@@ -72,8 +72,8 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
           }}
           className={`py-3 px-4 rounded-lg font-semibold transition-all ${
             type === 'expense'
-              ? 'bg-red-500 text-white shadow-lg'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-[#f87171] text-[#0f0f14]'
+              : 'border border-white/[0.12] bg-transparent text-[#9ca3af] hover:text-white'
           }`}
         >
           Expense
@@ -82,27 +82,27 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
             Date
           </label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-4 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
             required
           />
         </div>
 
         {type === 'expense' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
               Expense Type
             </label>
             <select
               value={expenseCategory}
               onChange={(e) => setExpenseCategory(e.target.value as ExpenseCategory)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-4 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
             >
               <option value="cogs">Cost of Goods Sold (COGS)</option>
               <option value="operating">Operating Expense</option>
@@ -112,13 +112,13 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
             Category
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-4 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
             required
           >
             <option value="">Select a category</option>
@@ -131,7 +131,7 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
             Amount
           </label>
           <input
@@ -141,13 +141,13 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-4 py-2 text-sm text-white outline-none focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="mb-1 block text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">
             Description
           </label>
           <input
@@ -155,13 +155,13 @@ export const TransactionForm = ({ onAdd, appData }: TransactionFormProps) => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional notes"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-xl border border-white/[0.12] bg-[#0f0f14] px-4 py-2 text-sm text-white outline-none placeholder:text-[#9ca3af] focus:border-[#7c6ff7] focus:ring-2 focus:ring-[#7c6ff7]/30"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#7c6ff7] px-4 py-3 font-semibold text-white transition-colors hover:bg-[#6d5ff0]"
         >
           <Plus size={20} />
           Add Transaction

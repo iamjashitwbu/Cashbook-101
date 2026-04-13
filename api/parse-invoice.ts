@@ -1,6 +1,6 @@
 import formidable, { type File as FormidableFile } from 'formidable';
 import { promises as fs } from 'node:fs';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'nod   e:http';
 import { tmpdir } from 'node:os';
 import { extractPdfText } from '../lib/pdfTextExtract.js';
 
@@ -78,7 +78,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     uploadedPdfPath = uploadedFile.filepath;
 
     const pdfBuffer = await fs.readFile(uploadedPdfPath);
-    const invoiceText = await extractInvoicePdfRawText(pdfBuffer);
+    const invoiceText = await extractPdfText(pdfBuffer);
 
     if (!invoiceText.trim()) {
       return res.status(422).json({
@@ -91,17 +91,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(200).json({ invoiceData });
   } catch (error) {
     console.error('Invoice API error:', error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : 'The invoice parsing request failed.';
-    const isMalformedAiResponse =
-      errorMessage ===
-      'The invoice parser returned a malformed AI response. Please try again with the same PDF or upload a clearer invoice.';
-
-    return res.status(isMalformedAiResponse ? 502 : 500).json({
-      error: errorMessage,
-      ...(isMalformedAiResponse ? { code: 'MALFORMED_AI_RESPONSE' } : {})
+    return res.status(500).json({
+      error:
+        error instanceof Error
+          ? error.message
+          : 'The invoice parsing request failed.'
     });
   } finally {
     await Promise.all([uploadedPdfPath ? safeRemove(uploadedPdfPath) : Promise.resolve()]);
@@ -274,32 +268,6 @@ const parseUploadedPdf = async (req: ApiRequest): Promise<FormidableFile> => {
 
   return pdfFile;
 };
-
-const extractInvoicePdfRawText = async (pdfBuffer: Buffer): Promise<string> => {
-  const parsedText = await extractPdfText(pdfBuffer);
-
-  if (parsedText.trim()) {
-    return parsedText;
-  }
-
-  const pdfSource = pdfBuffer.toString('latin1');
-  const literalTextMatches = [...pdfSource.matchAll(/\(([^()]*)\)\s*Tj/g)];
-
-  return literalTextMatches
-    .map((match) => decodePdfLiteralText(match[1]))
-    .filter(Boolean)
-    .join('\n');
-};
-
-const decodePdfLiteralText = (value: string) =>
-  value
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\\(/g, '(')
-    .replace(/\\\)/g, ')')
-    .replace(/\\\\/g, '\\')
-    .trim();
 
 const extractInvoiceDataFromText = async (
   invoiceText: string,
