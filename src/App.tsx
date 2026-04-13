@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, BarChart3, List, FileText, Plus, Upload, Download } from 'lucide-react';
+import { Wallet, BarChart3, List, FileText, Plus, Upload, Download, Menu, X } from 'lucide-react';
 import { Transaction, Filters as FiltersType, AppData, InvoiceData } from './types';
 import { loadAppData, saveTransactionForEntity, addEntity, createEntity } from './utils/storage';
 import { exportToExcel } from './utils/exportExcel';
@@ -29,6 +29,7 @@ function App() {
   });
   const [view, setView] = useState<View>('transactions');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const loaded = loadAppData();
@@ -131,8 +132,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0f0f14] text-white flex">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Left Sidebar */}
-      <div className="w-[220px] bg-[#1a1a24] border-r border-white/[0.06] flex flex-col min-h-screen fixed left-0 top-0">
+      <div className={`w-[220px] bg-[#1a1a24] border-r border-white/[0.06] flex flex-col min-h-screen fixed left-0 top-0 z-40 transition-transform md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         {/* Logo/Brand */}
         <div className="p-6 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
@@ -159,10 +168,13 @@ function App() {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           <button
-            onClick={() => setView('import')}
+            onClick={() => {
+              setView('import');
+              setSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold transition-all text-left ${view === 'import'
-                ? 'bg-[#7c6ff7] text-white'
-                : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
+              ? 'bg-[#7c6ff7] text-white'
+              : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
               }`}
           >
             <Upload size={20} />
@@ -170,10 +182,13 @@ function App() {
           </button>
 
           <button
-            onClick={() => setView('transactions')}
+            onClick={() => {
+              setView('transactions');
+              setSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold transition-all text-left ${view === 'transactions'
-                ? 'bg-[#7c6ff7] text-white'
-                : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
+              ? 'bg-[#7c6ff7] text-white'
+              : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
               }`}
           >
             <List size={20} />
@@ -181,10 +196,13 @@ function App() {
           </button>
 
           <button
-            onClick={() => setView('summary')}
+            onClick={() => {
+              setView('summary');
+              setSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold transition-all text-left ${view === 'summary'
-                ? 'bg-[#7c6ff7] text-white'
-                : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
+              ? 'bg-[#7c6ff7] text-white'
+              : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
               }`}
           >
             <BarChart3 size={20} />
@@ -192,10 +210,13 @@ function App() {
           </button>
 
           <button
-            onClick={() => setView('invoice-parser')}
+            onClick={() => {
+              setView('invoice-parser');
+              setSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 rounded-[10px] px-4 py-3 font-semibold transition-all text-left ${view === 'invoice-parser'
-                ? 'bg-[#7c6ff7] text-white'
-                : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
+              ? 'bg-[#7c6ff7] text-white'
+              : 'text-[#9ca3af] hover:bg-white/[0.06] hover:text-white'
               }`}
           >
             <FileText size={20} />
@@ -216,14 +237,25 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 ml-[220px] min-h-screen">
-        <div className="p-6">
+      <div className="flex-1 md:ml-[220px] min-h-screen bg-[#0f0f14]">
+        <div className="p-4 md:p-6">
+          {/* Mobile Hamburger Menu */}
+          <div className="md:hidden flex items-center justify-between mb-6">
+            <h1 className="text-xl font-bold text-white">Cashbook</h1>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-white p-2 hover:bg-white/[0.06] rounded-lg transition-colors"
+              aria-label="Toggle sidebar"
+            >
+              {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
           {/* Top Bar with Balance */}
           <div className="flex justify-end mb-6">
             <div className="text-right">
-              <p className="text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">Current Balance</p>
+              <p className="text-xs md:text-sm font-semibold uppercase tracking-wide text-[#9ca3af]">Current Balance</p>
               <p
-                className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-[#4ade80]' : 'text-[#f87171]'}`}
+                className={`text-xl md:text-2xl font-bold ${currentBalance >= 0 ? 'text-[#4ade80]' : 'text-[#f87171]'}`}
               >
                 {formatCurrencySymbol(currentBalance)}
               </p>
@@ -242,11 +274,11 @@ function App() {
               </div>
             ) : view === 'transactions' ? (
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-white">Transactions</h2>
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+                  <h2 className="text-xl md:text-2xl font-bold text-white">Transactions</h2>
                   <button
                     onClick={() => setShowTransactionModal(true)}
-                    className="flex items-center gap-2 rounded-[10px] bg-[#7c6ff7] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#6d5ff0]"
+                    className="flex items-center gap-2 rounded-[10px] bg-[#7c6ff7] px-4 md:px-6 py-3 font-semibold text-white transition-colors hover:bg-[#6d5ff0] w-full md:w-auto justify-center md:justify-start"
                   >
                     <Plus size={20} />
                     Add Transaction
